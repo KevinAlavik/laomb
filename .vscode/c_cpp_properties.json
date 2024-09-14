@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Freestanding",
+            "includePath": [
+                "${workspaceFolder}/kernel/inc",
+                "${workspaceFolder}/kernel/cfg"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c23",
+            "intelliSenseMode": "gcc-x86",
+            "compilerArgs": [
+                "-ffreestanding",
+                "-nostdlib",
+                "-lgcc",
+                "-std=c23"
+            ]
+        }
+    ],
+    "version": 4
+}

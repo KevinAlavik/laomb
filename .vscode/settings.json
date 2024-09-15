@@ -79,6 +79,8 @@
         "string.h": "c",
         "gdt.h": "c",
         "stdint.h": "c",
-        "pic.h": "c"
+        "pic.h": "c",
+        "idt.h": "c",
+        "bitset": "c"
     }
 }

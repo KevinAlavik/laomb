@@ -27,7 +27,7 @@ struct ultra_platform_info_attribute {
     uint32_t platform_type;
 
     uint16_t loader_major;
-    uint16_t loader_minor;
+    uint16_t loader_minor;  
     char loader_name[32];
 
     uint64_t acpi_rsdp_address;

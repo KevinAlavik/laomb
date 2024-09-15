@@ -58,7 +58,7 @@ void _putchar(char c)
 #endif
 
 // support for the floating point type (%f)
-// default: activated
+// disabled
 #define PRINTF_DISABLE_SUPPORT_FLOAT
 #ifndef PRINTF_DISABLE_SUPPORT_FLOAT
 #define PRINTF_SUPPORT_FLOAT
@@ -66,6 +66,7 @@ void _putchar(char c)
 
 // support for exponential floating point notation (%e/%g)
 // default: activated
+#define PRINTF_DISABLE_SUPPORT_EXPONENTIAL
 #ifndef PRINTF_DISABLE_SUPPORT_EXPONENTIAL
 #define PRINTF_SUPPORT_EXPONENTIAL
 #endif

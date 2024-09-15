@@ -47,6 +47,21 @@ run:
 		-d int \
 		-D $(BUILD_DIR)/qemu_interrupt.log
 
+debug:
+	@clear
+	@qemu-system-i386 -drive format=raw,file=$(BUILD_DIR)/image.hdd,if=ide,index=0 \
+		-m 64M -cpu pentium \
+		-machine pc-i440fx-2.9,acpi=off \
+		-device cirrus-vga \
+		-debugcon stdio \
+		--no-reboot --no-shutdown \
+		-serial file:$(BUILD_DIR)/serial_output.txt \
+		-monitor file:$(BUILD_DIR)/monitor_output.txt \
+		-d int \
+		-D $(BUILD_DIR)/qemu_interrupt.log \
+		-s -S & \
+		sleep 2 && \
+		gdb -ex "file $(BUILD_DIR)/kernel.bin" -ex "target remote localhost:1234"
 
 
 clean:

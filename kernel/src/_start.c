@@ -6,6 +6,7 @@
 #include <sys/gdt.h>
 #include <sys/idt.h>
 #include <sys/pic.h>
+#include <sys/mm/pmm.h>
 #include <ultra_protocol.h>
 
 struct ultra_boot_context boot_context;
@@ -31,7 +32,8 @@ struct ultra_platform_info_attribute platform_info_attrb;
 
     gdt_init();
     idt_init();
-    
+    pmm_init(ctx);
+
     sti();
-    for(;;) hlt();
+    for(;;) ;
 }

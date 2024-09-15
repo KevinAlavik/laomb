@@ -1,5 +1,5 @@
 [bits 32]
-
+section .text
 extern idt_default_handler
 
 ; cpu pushes to the stack: ss, esp, eflags, cs, eip
@@ -26,7 +26,7 @@ isr_common:
     pusha
 
     xor eax, eax
-    mov ax, ds
+    mov ax, ds  
     push eax
 
     mov ax, 0x10

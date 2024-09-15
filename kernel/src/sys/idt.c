@@ -7,21 +7,6 @@
 
 #define PIC_REMAP_OFFSET        0x20
 
-typedef struct
-{
-    uint16_t base_low;
-    uint16_t segment_selector;
-    uint8_t reserved;
-    uint8_t flags;
-    uint16_t base_high;
-} __attribute__((packed)) idt_entry_t;
-
-typedef struct
-{
-    uint16_t limit;
-    uintptr_t base;
-} __attribute__((packed)) idt_pointer_t;
-
 __attribute__((aligned(16))) idt_entry_t idt[256];
 
 idt_pointer_t idt_ptr = { sizeof(idt) - 1, (uintptr_t)&idt };
@@ -81,6 +66,7 @@ void idt_init()
     for (int i = 0; i < 16; i++)
         idt_register_handler(PIC_REMAP_OFFSET + i, irq_default_handler);
     
+    kprintf(" -> Registering IDT at 0x%lx\n", idt_ptr.base);
     __asm__ volatile ("lidt %0" : : "m" (idt_ptr) : "memory");
 }
 

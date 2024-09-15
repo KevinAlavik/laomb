@@ -37,4 +37,21 @@ typedef void (*IRQHandler)(registers_t* regs);
 void idt_register_handler(int interrupt, ISRHandler handler);
 void irq_register_handler(int irq, IRQHandler handler);
 
+typedef struct
+{
+    uint16_t base_low;
+    uint16_t segment_selector;
+    uint8_t reserved;
+    uint8_t flags;
+    uint16_t base_high;
+} __attribute__((packed)) idt_entry_t;
+
+typedef struct
+{
+    uint16_t limit;
+    uintptr_t base;
+} __attribute__((packed)) idt_pointer_t;
+
+extern idt_pointer_t idt_ptr;
+
 #endif

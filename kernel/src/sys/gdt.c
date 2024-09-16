@@ -7,7 +7,7 @@ gdt_pointer_t gdt_ptr;
 tss_t tss = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 void gdt_load() {
-    kprintf(" -> Loading GDTR and flushing segment selectors\n");
+    kprintf(" -> Loading GDTR and flushing segment selectors: %x\n", gdt_ptr.base);
     __asm__ volatile (
         "lgdtl (%0)\n"
         "mov $0x10, %%ax\n"

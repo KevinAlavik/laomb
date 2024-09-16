@@ -8,7 +8,7 @@
 #define ALIGN_UP(x, align) (((x) + (align) - 1) & ~((align) - 1))
 #define ALIGN_DOWN(x, align) ((x) & ~((align) - 1))
 
-static struct ultra_memory_map_attribute memory_map;
+static struct ultra_memory_map_attribute* memory_map;
 static uint8_t* bitmap;
 static size_t total_pages;
 static size_t bitmap_size;
@@ -34,12 +34,12 @@ void pmm_init(struct ultra_boot_context* ctx) {
         head = ULTRA_NEXT_ATTRIBUTE(head);
         type = head->type;
     }
-    memcpy(&memory_map, head, head->size);
-    kprintf("Memory map found, number of entiries: %d\n", ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map.header));
+    memory_map = (struct ultra_memory_map_attribute*)head;
+    kprintf("Memory map found, number of entiries: %d\n", ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header));
 
     total_pages = 0;
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map.header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map.entries[i];
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
         kprintf("Memory region: start=0x%llx, size=0x%llx, type=0x%08x\n",
                 entry->physical_address, entry->size, entry->type);
 
@@ -52,18 +52,18 @@ void pmm_init(struct ultra_boot_context* ctx) {
     bitmap_size = BITMAP_SIZE(total_pages * PAGE_SIZE);
     kprintf("Bitmap size: %lu bytes\n", bitmap_size);   
     
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map.header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map.entries[i];
-        if (entry->type == ULTRA_MEMORY_TYPE_FREE || entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE) {
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
+        if ((entry->type == ULTRA_MEMORY_TYPE_FREE || entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE)) {
 
             uintptr_t start_page = ALIGN_UP(entry->physical_address, PAGE_SIZE);
             uintptr_t num_pages = entry->size / PAGE_SIZE;
 
             kprintf("Checking region for bitmap placement: start=0x%lx, num_pages=%lu\n", start_page, num_pages);
             
-            if (num_pages * PAGE_SIZE >= bitmap_size) {
+            if (num_pages * PAGE_SIZE >= bitmap_size) {                    
                 bitmap = (uint8_t*)start_page;
-                kprintf("Bitmap placed at: 0x%p\n", bitmap);    
+                kprintf("Bitmap placed at: 0x%p\n", bitmap);
 
                 memset(bitmap, 0xFF, bitmap_size);
                 break;
@@ -73,8 +73,8 @@ void pmm_init(struct ultra_boot_context* ctx) {
 
     set_bit(0);
 
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map.header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map.entries[i];
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
         if (entry->type == ULTRA_MEMORY_TYPE_FREE || entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE) {
             uintptr_t aligned_address = ALIGN_UP(entry->physical_address, PAGE_SIZE);
             uintptr_t end_address = entry->physical_address + entry->size;
@@ -94,16 +94,69 @@ void pmm_init(struct ultra_boot_context* ctx) {
 }
 
 void* pmm_alloc() {
-    for (size_t i = 0; i < total_pages; i++) {
+    for (size_t i = 0; i < total_pages; i++) {  
         if (!test_bit(i)) {
             set_bit(i);
             return (void*)(i * PAGE_SIZE);
-        }
+        }   
     }
     return NULL;
+}
+
+void* pmm_alloc_pages(size_t num_pages) {
+    size_t start_page = 0;
+    size_t contiguous_count = 0;
+
+    for (size_t i = 0; i < total_pages; i++) {
+        if (!test_bit(i)) {
+            if (contiguous_count == 0) {
+                start_page = i;
+            }
+            contiguous_count++;
+
+            if (contiguous_count == num_pages) {
+                for (size_t j = 0; j < num_pages; j++) {
+                    set_bit(start_page + j);
+                }
+                return (void*)(start_page * PAGE_SIZE);
+            }
+        } else {
+            contiguous_count = 0;
+        }
+    }
+    return NULL;  
+}
+
+void pmm_free_pages(void* address, size_t num_pages) {
+    size_t start_page = (size_t)address / PAGE_SIZE;
+
+    for (size_t i = 0; i < num_pages; i++) {
+        clear_bit(start_page + i);
+    }
 }
 
 void pmm_free(void* ptr) {
     size_t page = (uintptr_t)ptr / PAGE_SIZE;
     clear_bit(page);
+}
+
+void pmm_reclaim_bootloader_memory() {
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
+
+        if (entry->type == ULTRA_MEMORY_TYPE_LOADER_RECLAIMABLE) {
+            uintptr_t aligned_address = ALIGN_UP(entry->physical_address, PAGE_SIZE);
+            uintptr_t end_address = entry->physical_address + entry->size;
+            uintptr_t num_pages = (end_address - aligned_address) / PAGE_SIZE;
+
+            kprintf("Reclaiming bootloader memory: aligned_address=0x%lx, num_pages=%lu\n", aligned_address, num_pages);
+
+            for (size_t j = 0; j < num_pages; j++) {
+                uintptr_t page_index = (aligned_address / PAGE_SIZE) + j;
+                clear_bit(page_index);
+            }
+        }
+    }
+
+    kprintf("Bootloader reclaimable memory has been reclaimed.\n");
 }

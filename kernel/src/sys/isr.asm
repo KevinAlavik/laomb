@@ -11,7 +11,6 @@ idt_%1:
     push 0
     push %1
     jmp isr_common
-
 %endmacro
 
 %macro ISR_ERRORCODE 1
@@ -19,7 +18,6 @@ global idt_%1:
 idt_%1:
     push %1
     jmp isr_common
-
 %endmacro
 
 isr_common:

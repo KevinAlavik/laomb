@@ -81,6 +81,8 @@
         "stdint.h": "c",
         "pic.h": "c",
         "idt.h": "c",
-        "bitset": "c"
+        "bitset": "c",
+        "pmm.h": "c",
+        "mmu.h": "c"
     }
 }

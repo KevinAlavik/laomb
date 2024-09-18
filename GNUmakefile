@@ -63,6 +63,9 @@ debug:
 		sleep 2 && \
 		gdb -ex "file $(BUILD_DIR)/kernel.bin" -ex "target remote localhost:1234"
 
+release:
+	@$(STRIP) $(BUILD_DIR)/kernel.bin
+	@make run
 
 clean:
 	@clear
@@ -75,4 +78,4 @@ reset:
 	@clear
 	@make
 
-.PHONY: all kernel disk ramfs run clean reset reinstall-hyper
+.PHONY: all kernel disk ramfs run clean reset reinstall-hyper release

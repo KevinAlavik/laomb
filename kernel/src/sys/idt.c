@@ -54,19 +54,15 @@ void irq_default_handler(registers_t* regs);
 
 void idt_init()
 {
-    kprintf(" -> Initializing IDT\n");
     for (int i = 0; i < 256; i++) {
         idt_set_gate(i, isr_table[i], 0x08 /* GDT Kernel Code */, IDT_FLAG_RING0 | IDT_FLAG_GATE_32BIT_INT);
         idt_enable_gate(i);
     }
-    kprintf(" -> Initializing PIC\n");
     pic_init(PIC_REMAP_OFFSET, PIC_REMAP_OFFSET + 8);
 
-    kprintf(" -> Registering irq handlers\n");
     for (int i = 0; i < 16; i++)
         idt_register_handler(PIC_REMAP_OFFSET + i, irq_default_handler);
     
-    kprintf(" -> Registering IDT at 0x%lx\n", idt_ptr.base);
     __asm__ volatile ("lidt %0" : : "m" (idt_ptr) : "memory");
 }
 

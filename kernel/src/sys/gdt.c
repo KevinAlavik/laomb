@@ -7,7 +7,6 @@ gdt_pointer_t gdt_ptr;
 tss_t tss = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 void gdt_load() {
-    kprintf(" -> Loading GDTR and flushing segment selectors: %x\n", gdt_ptr.base);
     __asm__ volatile (
         "lgdtl (%0)\n"
         "mov $0x10, %%ax\n"
@@ -21,12 +20,9 @@ void gdt_load() {
         : : "r" (&gdt_ptr)
         : "ax"
     );
-    kprintf(" -> Loading TSS into the task register\n");
-    __asm__ volatile ("ltr %0" : : "rm" ((uint16_t)0x28) : "memory");
 }
 
 void gdt_init() {
-    kprintf("<> Initializing GDT\n");
     gdt.entries[0] = (gdt_entry_t){0,0,0,0,0,0};  // Null segment
 
     gdt.entries[1] = (gdt_entry_t){               // Kernel Code32

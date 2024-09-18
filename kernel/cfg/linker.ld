@@ -35,5 +35,10 @@ SECTIONS
 		__bss_end = .;
 	}
 
+	/DISCARD/ : { 
+		*(.eh_frame)
+		*(.comment)
+	}
+
 	__end = .;
 }

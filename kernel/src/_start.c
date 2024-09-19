@@ -7,7 +7,7 @@
 #include <sys/idt.h>
 #include <sys/pic.h>
 #include <sys/mm/pmm.h>
-#include <sys/mm/mmu.h>
+#include <sys/mm/vmm.h>
 #include <ultra_protocol.h>
 
 struct ultra_boot_context* boot_context;
@@ -34,7 +34,9 @@ struct ultra_platform_info_attribute* platform_info_attrb;
     gdt_init();
     idt_init();
     pmm_init(ctx);
-    vmm_init_pd(kernel_page_directory);
+    vmm_init_pd(&kernel_page_directory);
+    kprintf("VMM: 0x%p\n", kernel_page_directory.pd);
+    vmm_switch_pd(&kernel_page_directory);
 
     sti();
     for(;;) ;

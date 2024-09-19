@@ -8,10 +8,11 @@
 #define ALIGN_UP(x, align) (((x) + (align) - 1) & ~((align) - 1))
 #define ALIGN_DOWN(x, align) ((x) & ~((align) - 1))
 
-static struct ultra_memory_map_attribute* memory_map;
-static uint8_t* bitmap;
-static size_t total_pages;
-static size_t bitmap_size;
+extern struct ultra_platform_info_attribute* platform_info_attrb;
+struct ultra_memory_map_attribute* memory_map;
+uint8_t* bitmap;
+size_t total_pages;
+size_t bitmap_size;
 
 static inline void set_bit(size_t bit) {
     bitmap[bit / 8] |= (1 << (bit % 8));
@@ -67,6 +68,7 @@ void pmm_init(struct ultra_boot_context* ctx) {
                 
                 bitmap_start_page = ALIGN_DOWN(start_page, PAGE_SIZE) / PAGE_SIZE;
                 bitmap_end_page = ALIGN_UP(start_page + bitmap_size, PAGE_SIZE) / PAGE_SIZE;
+                bitmap += platform_info_attrb->higher_half_base; // map higher half
 
                 kprintf("Bitmap placed at: 0x%p->0x%p\n", bitmap, bitmap + bitmap_size);
                 for (uintptr_t page = bitmap_start_page; page < bitmap_end_page; page++) {
@@ -75,7 +77,7 @@ void pmm_init(struct ultra_boot_context* ctx) {
 
                 break;
             }
-        }   
+        }
     }
 
     set_bit(0);
@@ -106,7 +108,7 @@ void* pmm_alloc() {
         if (!test_bit(i)) {
             set_bit(i);
             return (void*)(i * PAGE_SIZE);
-        }   
+        }
     }
     return NULL;
 }

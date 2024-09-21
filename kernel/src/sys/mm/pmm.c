@@ -8,7 +8,7 @@
 #define ALIGN_UP(x, align) (((x) + (align) - 1) & ~((align) - 1))
 #define ALIGN_DOWN(x, align) ((x) & ~((align) - 1))
 
-extern struct ultra_platform_info_attribute* platform_info_attrb;
+extern uintptr_t higher_half_base;
 struct ultra_memory_map_attribute* memory_map;
 uint8_t* bitmap;
 size_t total_pages;
@@ -68,7 +68,7 @@ void pmm_init(struct ultra_boot_context* ctx) {
                 
                 bitmap_start_page = ALIGN_DOWN(start_page, PAGE_SIZE) / PAGE_SIZE;
                 bitmap_end_page = ALIGN_UP(start_page + bitmap_size, PAGE_SIZE) / PAGE_SIZE;
-                bitmap += platform_info_attrb->higher_half_base; // map higher half
+                bitmap += higher_half_base; // map higher half
 
                 kprintf("Bitmap placed at: 0x%p->0x%p\n", bitmap, bitmap + bitmap_size);
                 for (uintptr_t page = bitmap_start_page; page < bitmap_end_page; page++) {
@@ -159,28 +159,10 @@ void pmm_reclaim_bootloader_memory() {
             uintptr_t end_address = entry->physical_address + entry->size;
             uintptr_t num_pages = (end_address - aligned_address) / PAGE_SIZE;
 
-            kprintf("Reclaiming bootloader memory: aligned_address=0x%lx, num_pages=%lu\n", aligned_address, num_pages);
-
             for (size_t j = 0; j < num_pages; j++) {
                 uintptr_t page_index = (aligned_address / PAGE_SIZE) + j;
                 clear_bit(page_index);
             }
         }
     }
-
-    kprintf("Bootloader reclaimable memory has been reclaimed.\n");
-}
-
-// this will be called by the kernel heap manager AFTER it saves what pages are usable (aka some are used by bitmap, some by bootloader)
-void reserve_low_memory_for_heap() {
-    uintptr_t low_memory_end = 0x9FC00;  // Limit for usable low memory
-
-    for (uintptr_t addr = 0x0; addr < low_memory_end; addr += PAGE_SIZE) {
-        size_t page_index = addr / PAGE_SIZE;
-        
-        // Mark this page as used in the PMM so it won't be allocated elsewhere
-        set_bit(page_index);
-    }
-
-    kprintf("Low memory (0x0 to 0x9FC00) reserved for kernel heap.\n");
 }

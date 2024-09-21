@@ -58,5 +58,5 @@ extern vmm_context_t kernel_page_directory;
 bool vmm_map_page(vmm_context_t* pageDirectory, uint32_t virtualAddress, size_t size, uint32_t physicalAddress, uint32_t flags);
 bool vmm_unmap_page(vmm_context_t* pageDirectory, uint32_t virtualAddress);
 
-void __attribute__((__deprecated__("Do not use this until we get a heap to simplify stuff"))) vmm_init_pd(vmm_context_t* pageDirectory);
+void vmm_init_pd(vmm_context_t* pageDirectory);
 void vmm_switch_pd(vmm_context_t* pageDirectory);

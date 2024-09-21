@@ -83,6 +83,7 @@
         "idt.h": "c",
         "bitset": "c",
         "pmm.h": "c",
-        "mmu.h": "c"
+        "mmu.h": "c",
+        "slab.h": "c"
     }
 }

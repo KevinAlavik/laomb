@@ -12,7 +12,7 @@
 #endif
 
 vmm_context_t kernel_page_directory;
-extern struct ultra_platform_info_attribute* platform_info_attrb;
+extern uintptr_t higher_half_base;
 
 static inline uint32_t get_page_index(uint32_t addr) {
     return addr / PAGE_SIZE;
@@ -30,8 +30,8 @@ static inline void set_page_entry(page_table_entry* entry, uint32_t addr, uint32
 }
 
 void vmm_switch_pd(vmm_context_t* pageDirectory) {
-    pageDirectory->pd = (PageDirectory*)((uintptr_t)pageDirectory->pd - (uintptr_t)platform_info_attrb->higher_half_base);
-    kprintf("Loading PD at paddr: 0x%p, vaddr: 0x%lx\n", pageDirectory->pd, ((uintptr_t)pageDirectory->pd + platform_info_attrb->higher_half_base));
+    pageDirectory->pd = (PageDirectory*)((uintptr_t)pageDirectory->pd - higher_half_base);
+    kprintf("Loading PD at paddr: 0x%p, vaddr: 0x%lx\n", pageDirectory->pd, ((uintptr_t)pageDirectory->pd + higher_half_base));
     __asm__ volatile(
         "mov %0, %%cr3\n"
         : :"r"(pageDirectory->pd)
@@ -40,8 +40,7 @@ void vmm_switch_pd(vmm_context_t* pageDirectory) {
 }
 
 void vmm_init_pd(vmm_context_t* page_directory) {
-    uint32_t higher_half_base = platform_info_attrb->higher_half_base;
-    page_directory->pd = pmm_alloc(); //TODO: USE THE HEAPP!!
+    page_directory->pd = pmm_alloc();
     page_directory->pd = (PageDirectory*)((uintptr_t)page_directory->pd + higher_half_base);
 
     memset(page_directory->pd, 0, PAGE_SIZE);
@@ -52,6 +51,7 @@ void vmm_init_pd(vmm_context_t* page_directory) {
     );
 
     for (uint32_t addr = 0; addr < 0x40000000; addr += PAGE_SIZE) {
+        // TODO: Check if the physical adress exist (memory map) and mark the rest as not present
         if (!vmm_map_page(page_directory, higher_half_base + addr, PAGE_SIZE, addr, PAGE_PRESENT | PAGE_RW)) {
             cli(); for(;;) hlt();
         }

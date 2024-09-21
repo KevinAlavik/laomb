@@ -35,7 +35,6 @@ struct ultra_platform_info_attribute* platform_info_attrb;
     idt_init();
     pmm_init(ctx);
     vmm_init_pd(&kernel_page_directory);
-    kprintf("VMM: 0x%p\n", kernel_page_directory.pd);
     vmm_switch_pd(&kernel_page_directory);
 
     sti();

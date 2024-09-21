@@ -43,7 +43,6 @@ run:
 		-debugcon stdio \
 		--no-reboot --no-shutdown \
 		-serial file:$(BUILD_DIR)/serial_output.txt \
-		-monitor file:$(BUILD_DIR)/monitor_output.txt \
 		-d int \
 		-D $(BUILD_DIR)/qemu_interrupt.log
 
@@ -56,7 +55,6 @@ debug:
 		-debugcon stdio \
 		--no-reboot --no-shutdown \
 		-serial file:$(BUILD_DIR)/serial_output.txt \
-		-monitor file:$(BUILD_DIR)/monitor_output.txt \
 		-d int \
 		-D $(BUILD_DIR)/qemu_interrupt.log \
 		-s -S & \
@@ -71,7 +69,7 @@ clean:
 	@clear
 	@make -C kernel/ clean
 	@rm -rf $(BUILD_DIR)/image.hdd $(BUILD_DIR)/image.iso iso_root/ $(BUILD_DIR)/initramfs.img
-	@rm -rf $(BUILD_DIR)/serial_output.txt $(BUILD_DIR)/monitor_output.txt $(BUILD_DIR)/qemu_log.txt
+	@rm -rf $(BUILD_DIR)/serial_output.txt $(BUILD_DIR)/qemu_log.txt
 
 reset:
 	@make clean

@@ -170,3 +170,17 @@ void pmm_reclaim_bootloader_memory() {
 
     kprintf("Bootloader reclaimable memory has been reclaimed.\n");
 }
+
+// this will be called by the kernel heap manager AFTER it saves what pages are usable (aka some are used by bitmap, some by bootloader)
+void reserve_low_memory_for_heap() {
+    uintptr_t low_memory_end = 0x9FC00;  // Limit for usable low memory
+
+    for (uintptr_t addr = 0x0; addr < low_memory_end; addr += PAGE_SIZE) {
+        size_t page_index = addr / PAGE_SIZE;
+        
+        // Mark this page as used in the PMM so it won't be allocated elsewhere
+        set_bit(page_index);
+    }
+
+    kprintf("Low memory (0x0 to 0x9FC00) reserved for kernel heap.\n");
+}

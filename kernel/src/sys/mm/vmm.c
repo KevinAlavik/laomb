@@ -1,5 +1,6 @@
 #include <sys/mm/vmm.h>
 #include <sys/mm/pmm.h>
+#include <io.h>
 #include <string.h>
 #include <kprintf>
 #include <stdbool.h>
@@ -29,42 +30,39 @@ static inline void set_page_entry(page_table_entry* entry, uint32_t addr, uint32
 }
 
 void vmm_switch_pd(vmm_context_t* pageDirectory) {
-    kprintf("Switching to Page Directory: 0x%p (before math)\n", pageDirectory->pd);
     pageDirectory->pd = (PageDirectory*)((uintptr_t)pageDirectory->pd - (uintptr_t)platform_info_attrb->higher_half_base);
-    kprintf("Switching to Page Directory: 0x%p (after math)\n", pageDirectory->pd);
+    kprintf("Loading PD at paddr: 0x%p, vaddr: 0x%lx\n", pageDirectory->pd, ((uintptr_t)pageDirectory->pd + platform_info_attrb->higher_half_base));
     __asm__ volatile(
         "mov %0, %%cr3\n"
-        : :"r"(pageDirectory)
+        : :"r"(pageDirectory->pd)
         : "memory"
     );
 }
 
 void vmm_init_pd(vmm_context_t* page_directory) {
-    page_directory->pd = pmm_alloc();
-    kprintf("Page Directory: 0x%p\n", page_directory->pd);
-    page_directory->pd = (PageDirectory*)((uintptr_t)page_directory->pd + (uintptr_t)platform_info_attrb->higher_half_base);
-    kprintf("Higher Half Page Directory: 0x%p\n", page_directory->pd);
-
-    memset(page_directory, 0, PAGE_SIZE);
-
     uint32_t higher_half_base = platform_info_attrb->higher_half_base;
+    page_directory->pd = pmm_alloc(); //TODO: USE THE HEAPP!!
+    page_directory->pd = (PageDirectory*)((uintptr_t)page_directory->pd + higher_half_base);
+
+    memset(page_directory->pd, 0, PAGE_SIZE);
+
     kprintf(
         "Kernel Adresses: text 0x%p - 0x%p, rodata 0x%p - 0x%p, data 0x%p - 0x%p, bss 0x%p - 0x%p\n",
         __text_start, __text_end, __rodata_start, __rodata_end, __data_start, __data_end, __bss_start, __bss_end
     );
 
     for (uint32_t addr = 0; addr < 0x40000000; addr += PAGE_SIZE) {
-        vmm_map_page(page_directory, higher_half_base + addr, PAGE_SIZE, addr, PAGE_PRESENT | PAGE_RW);
+        if (!vmm_map_page(page_directory, higher_half_base + addr, PAGE_SIZE, addr, PAGE_PRESENT | PAGE_RW)) {
+            cli(); for(;;) hlt();
+        }
     }
-    vmm_map_page(page_directory, higher_half_base + (uintptr_t)__text_start, __text_end - __text_start, (uintptr_t)__text_start - higher_half_base, PAGE_PRESENT);
-    vmm_map_page(page_directory, higher_half_base + (uintptr_t)__rodata_start, __rodata_end - __rodata_start, (uintptr_t)__rodata_start - higher_half_base, PAGE_PRESENT);
-    vmm_map_page(page_directory, higher_half_base + (uintptr_t)__data_start, __data_end - __data_start, (uintptr_t)__data_start - higher_half_base, PAGE_PRESENT | PAGE_RW);
-    vmm_map_page(page_directory, higher_half_base + (uintptr_t)__bss_start, __bss_end - __bss_start, (uintptr_t)__bss_start - higher_half_base, PAGE_PRESENT | PAGE_RW);
+    vmm_map_page(page_directory, (uintptr_t)__text_start, __text_end - __text_start, (uintptr_t)__text_start - higher_half_base, PAGE_PRESENT);
+    vmm_map_page(page_directory, (uintptr_t)__rodata_start, __rodata_end - __rodata_start, (uintptr_t)__rodata_start - higher_half_base, PAGE_PRESENT);
+    vmm_map_page(page_directory, (uintptr_t)__data_start, __data_end - __data_start, (uintptr_t)__data_start - higher_half_base, PAGE_PRESENT | PAGE_RW);
+    vmm_map_page(page_directory, (uintptr_t)__bss_start, __bss_end - __bss_start, (uintptr_t)__bss_start - higher_half_base, PAGE_PRESENT | PAGE_RW);
 }
 
-bool vmm_map_page(vmm_context_t* pageDirectory, uint32_t virtualAddress, size_t size, uint32_t physicalAddress, uint32_t flags) {
-    uint32_t vaddr = ROUND_DOWN_TO_PAGE(virtualAddress);
-    uint32_t paddr = ROUND_DOWN_TO_PAGE(physicalAddress);
+bool vmm_map_page(vmm_context_t* pageDirectory, uint32_t vaddr, size_t size, uint32_t paddr, uint32_t flags) {
     size = ROUND_UP_TO_PAGE(size);
 
     while (size > 0) {
@@ -73,28 +71,33 @@ bool vmm_map_page(vmm_context_t* pageDirectory, uint32_t virtualAddress, size_t 
 
         page_dir_entry* pageDirEntry = &pageDirectory->pd->entries[pageDirIndex];
 
-
         if (!is_page_present((page_table_entry* /* both have present at same offset */)pageDirEntry)) {
             PageTable* newPageTable = pmm_alloc();
-            if (!newPageTable) return false;
+            if (!newPageTable) {
+                kprintf("Failed to allocate a new page table for vaddr=0x%x\n", vaddr);
+                return false;
+            }
 
-            set_page_entry((page_table_entry*)pageDirEntry, (uint32_t)newPageTable, PAGE_PRESENT | PAGE_RW | PAGE_USER);
+            set_page_entry((page_table_entry*)pageDirEntry, (uint32_t)newPageTable, PAGE_PRESENT | PAGE_RW);
         }
 
         PageTable* pageTable = (PageTable*)(pageDirEntry->address << 12);
-        set_page_entry(&pageTable->entries[pageTableIndex], paddr, flags);
+
+        page_table_entry* pageEntry = &pageTable->entries[pageTableIndex];
+
+        set_page_entry(pageEntry, paddr, flags);
 
         vaddr += PAGE_SIZE;
         paddr += PAGE_SIZE;
         size -= PAGE_SIZE;
+
+        __asm__ volatile("invlpg (%0)" : :"r"(vaddr) : "memory");
     }
 
-    __asm__ volatile(
-        "invlpg (%0)" : :"r"(virtualAddress) : "memory"
-    );
     return true;
 }
 
+static const char pnp_text[] = "Page not present at 0x%x\n";
 bool vmm_unmap_page(vmm_context_t* pageDirectory, uint32_t virtualAddress) {
     uint32_t vaddr = ROUND_DOWN_TO_PAGE(virtualAddress);
     uint32_t pageDirIndex = vaddr >> 22;
@@ -102,12 +105,18 @@ bool vmm_unmap_page(vmm_context_t* pageDirectory, uint32_t virtualAddress) {
 
     page_dir_entry* pageDirEntry = &pageDirectory->pd->entries[pageDirIndex];
 
-    if (!is_page_present((page_table_entry* /* both have present at same offset */)pageDirEntry)) return false;
+    if (!is_page_present((page_table_entry* /* both have present at same offset */)pageDirEntry)) {
+        kprintf(pnp_text, vaddr);
+        return false;
+    }
 
     PageTable* pageTable = (PageTable*)(pageDirEntry->address << 12);
     page_table_entry* pageEntry = &pageTable->entries[pageTableIndex];
 
-    if (!is_page_present(pageEntry)) return false;
+    if (!is_page_present(pageEntry)) { 
+        kprintf(pnp_text, vaddr);
+        return false;
+    }
 
     pmm_free((void*)(pageEntry->address << 12));
     pageEntry->present = 0;

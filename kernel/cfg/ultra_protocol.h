@@ -23,7 +23,7 @@ struct ultra_attribute_header {
 #define ULTRA_PLATFORM_UEFI    2
 
 struct ultra_platform_info_attribute {
-    struct ultra_attribute_header header;
+    struct ultra_attribute_header header;   
     uint32_t platform_type;
 
     uint16_t loader_major;

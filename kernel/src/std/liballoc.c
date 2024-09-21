@@ -2,6 +2,7 @@
 #include <sys/mm/pmm.h>
 #include <string.h>
 #include <io.h>
+#include <kprintf>
 
 /**  Durand's Amazing Super Duper Memory functions.  */
 
@@ -30,7 +31,8 @@ extern uintptr_t higher_half_base;
 
 extern void* liballoc_alloc(size_t pages)
 {
-	return pmm_alloc_pages(pages) + higher_half_base;
+	void* ptr = (pmm_alloc_pages(pages) + higher_half_base);
+	return ptr;
 }
 extern int liballoc_free(void* ptr,size_t pages)
 {

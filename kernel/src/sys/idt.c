@@ -76,21 +76,24 @@ void idt_default_handler(registers_t* regs)
 
     else
     {
-        if (regs->cs == 0x18) {
-            // we came from usermode
-            kprintf("USERMODE!!!\n");
-            kprintf("SS=%x, ESP=%x\n", regs->ss, regs->user_esp);
+        if (regs->cs != 0x08) {
+            kprintf("Unhandled exception %d %s from usermode\n", regs->interrupt, g_Exceptions[regs->interrupt]);
+            kprintf("KERNEL PANIC!\n");
+            cli();
+
+            for(;;) hlt();
         }
 
         kprintf("Unhandled exception %d %s\n", regs->interrupt, g_Exceptions[regs->interrupt]);
         
-        kprintf("  eax=%x  ebx=%x  ecx=%x  edx=%x  esi=%x  edi=%x\n",
+        kprintf("  eax = 0x%lx  ebx = 0x%lx  ecx = 0x%lx  edx = 0x%lx  esi = 0x%lx  edi = 0x%lx\n",
                regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);
 
-        kprintf("  esp=%x  ebp=%x  eip=%x  eflags=%x  cs=%x  ds=%x\n",
+        kprintf("  esp = 0x%lx  ebp = 0x%lx  eip = 0x%lx  eflags = 0x%lx  cs = 0x%x  ds = 0x%x\n",
                regs->esp, regs->esp, regs->eip, regs->eflags, regs->cs, regs->ds);
 
-        kprintf("  interrupt=%x  errorcode=%x\n", regs->interrupt, regs->error);
+        kprintf("  interrupt = 0x%x  errorcode = 0x%x\n", regs->interrupt, regs->error);
+
 
         kprintf("KERNEL PANIC!\n");
         cli();

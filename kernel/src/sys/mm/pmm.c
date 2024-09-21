@@ -9,7 +9,7 @@
 #define ALIGN_DOWN(x, align) ((x) & ~((align) - 1))
 
 extern uintptr_t higher_half_base;
-struct ultra_memory_map_attribute* memory_map;
+struct ultra_memory_map_attribute* pmm_memory_map;
 uint8_t* bitmap;
 size_t total_pages;
 size_t bitmap_size;
@@ -34,11 +34,11 @@ void pmm_init(struct ultra_boot_context* ctx) {
         head = ULTRA_NEXT_ATTRIBUTE(head);
         type = head->type;
     }
-    memory_map = (struct ultra_memory_map_attribute*)head;
+    pmm_memory_map = (struct ultra_memory_map_attribute*)head;
 
     total_pages = 0;
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
         kprintf("Memory region: start=0x%llx, size=0x%llx, type=0x%08x\n",
                 entry->physical_address, entry->size, entry->type);
 
@@ -52,8 +52,8 @@ void pmm_init(struct ultra_boot_context* ctx) {
     
     uintptr_t bitmap_start_page = 0;
     uintptr_t bitmap_end_page = 0;
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
         if ((entry->type == ULTRA_MEMORY_TYPE_FREE || entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE)) {
 
             uintptr_t start_page = ALIGN_UP(entry->physical_address, PAGE_SIZE);
@@ -82,8 +82,8 @@ void pmm_init(struct ultra_boot_context* ctx) {
 
     set_bit(0);
 
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
         if (entry->type == ULTRA_MEMORY_TYPE_FREE || entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE) {
             uintptr_t aligned_address = ALIGN_UP(entry->physical_address, PAGE_SIZE);
             uintptr_t end_address = entry->physical_address + entry->size;
@@ -151,8 +151,8 @@ void pmm_free(void* ptr) {
 }
 
 void pmm_reclaim_bootloader_memory() {
-    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(memory_map->header); i++) {
-        struct ultra_memory_map_entry* entry = &memory_map->entries[i];
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
 
         if (entry->type == ULTRA_MEMORY_TYPE_LOADER_RECLAIMABLE) {
             uintptr_t aligned_address = ALIGN_UP(entry->physical_address, PAGE_SIZE);

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <ultra_protocol.h>
 
-extern struct ultra_memory_map_attribute* memory_map;
+extern struct ultra_memory_map_attribute* pmm_memory_map;
 extern uint8_t* bitmap;
 extern size_t total_pages;
 extern size_t bitmap_size;

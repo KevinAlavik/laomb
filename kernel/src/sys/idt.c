@@ -79,8 +79,8 @@ void idt_default_handler(registers_t* regs)
         if (regs->cs != 0x08) {
             kprintf("Unhandled exception %d %s from usermode\n", regs->interrupt, g_Exceptions[regs->interrupt]);
             kprintf("KERNEL PANIC!\n");
+            // TODO: Have the userspace manager kill it?
             cli();
-
             for(;;) hlt();
         }
 
@@ -89,11 +89,21 @@ void idt_default_handler(registers_t* regs)
         kprintf("  eax = 0x%lx  ebx = 0x%lx  ecx = 0x%lx  edx = 0x%lx  esi = 0x%lx  edi = 0x%lx\n",
                regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);
 
-        kprintf("  esp = 0x%lx  ebp = 0x%lx  eip = 0x%lx  eflags = 0x%lx  cs = 0x%x  ds = 0x%x\n",
-               regs->esp, regs->esp, regs->eip, regs->eflags, regs->cs, regs->ds);
+        kprintf("  esp = 0x%lx  ebp = 0x%lx  eip = 0x%lx  eflags = 0x%lx\n",
+               regs->esp, regs->esp, regs->eip, regs->eflags);
+
+        kprintf("  cs = 0x%x  ds = 0x%x  es = 0x%x  fs = 0x%x  gs = 0x%x\n", 
+               regs->cs, regs->ds, regs->es, regs->fs, regs->gs);
+
+        uint32_t cr2;
+        uint32_t cr0;
+        uint32_t cr3;
+        __asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
+        __asm__ volatile ("mov %%cr0, %0" : "=r" (cr0));
+        __asm__ volatile ("mov %%cr3, %0" : "=r" (cr3));
+        kprintf("  cr2 = 0x%lx  cr0 = 0x%lx  cr3 = 0x%lx\n", cr2, cr0, cr3);
 
         kprintf("  interrupt = 0x%x  errorcode = 0x%x\n", regs->interrupt, regs->error);
-
 
         kprintf("KERNEL PANIC!\n");
         cli();

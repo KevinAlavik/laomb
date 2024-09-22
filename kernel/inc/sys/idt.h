@@ -24,12 +24,12 @@ void idt_disable_gate(int interrupt);
 void idt_enable_gate(int interrupt);
 void idt_set_gate(int interrupt, void* base, uint16_t segmentDescriptor, uint8_t flags);
 
-typedef struct 
+typedef struct
 {
-    uint32_t ds;                                            // data segment pushed by us
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;    // pusha
-    uint32_t interrupt, error;                              // we push interrupt, error is pushed automatically (or our dummy)
-    uint32_t eip, cs, eflags, user_esp, ss;                      // pushed automatically by CPU
+    uint32_t gs, fs, es, ds;
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    uint32_t interrupt, error;
+    uint32_t eip, cs, eflags, user_esp, ss;
 } __attribute__((packed)) registers_t;
 
 typedef void (*ISRHandler)(registers_t* regs);

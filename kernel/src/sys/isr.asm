@@ -22,31 +22,31 @@ idt_%1:
 
 isr_common:
     pusha
-
-    xor eax, eax
-    mov ax, ds  
-    push eax
-
+    push ds
+    push es
+    push fs
+    push gs
+    
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
-    
-    push esp
-    call idt_default_handler
-    add esp, 4
+
+    mov eax, esp
+    push eax    
+
+    mov eax, idt_default_handler
+    call eax
 
     pop eax
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
+    pop gs
+    pop fs
+    pop es
+    pop ds
     popa
     add esp, 8
     iret
-
 
 ISR_NOERRORCODE 0
 ISR_NOERRORCODE 1

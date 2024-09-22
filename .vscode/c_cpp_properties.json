@@ -6,7 +6,9 @@
                 "${workspaceFolder}/kernel/inc",
                 "${workspaceFolder}/kernel/cfg"
             ],
-            "defines": [],
+            "defines": [
+                "__STDC_VERSION__=200710L"
+            ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c23",
             "intelliSenseMode": "gcc-x86",

@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#ifndef nullptr
+#ifndef nullptr // vscode shananigans
 #define nullptr NULL
 #endif
 

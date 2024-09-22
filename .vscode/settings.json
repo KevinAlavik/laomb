@@ -84,6 +84,8 @@
         "bitset": "c",
         "pmm.h": "c",
         "mmu.h": "c",
-        "slab.h": "c"
+        "slab.h": "c",
+        "task.h": "c",
+        "kheap.h": "c"
     }
 }

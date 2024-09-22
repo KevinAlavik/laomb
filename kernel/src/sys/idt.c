@@ -68,7 +68,7 @@ void idt_init()
 
 void idt_default_handler(registers_t* regs)
 {
-    if (handlers[regs->interrupt] != NULL)
+    if (handlers[regs->interrupt] != nullptr)
         handlers[regs->interrupt](regs);
 
     else if (regs->interrupt >= 32)
@@ -108,7 +108,7 @@ void irq_default_handler(registers_t* regs)
     uint8_t pic_isr = pic_read_isr();
     uint8_t pic_irr = pic_read_irqrr();
 
-    if (irq_handlers[irq] != NULL)
+    if (irq_handlers[irq] != nullptr)
     {
         irq_handlers[irq](regs);
     }

@@ -5,12 +5,6 @@
 #include <kprintf>
 #include <stdbool.h>
 
-#ifndef bool // vscode is on drugs once again
-#define bool	_Bool
-#define true	1
-#define false	0
-#endif
-
 vmm_context_t kernel_page_directory;
 extern uintptr_t higher_half_base;
 

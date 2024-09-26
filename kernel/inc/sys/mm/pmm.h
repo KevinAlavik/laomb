@@ -1,5 +1,4 @@
-#ifndef PMM_H
-#define PMM_H
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -17,4 +16,3 @@ void pmm_free(void* ptr);
 void pmm_free_pages(void* address, size_t num_pages);   
 void pmm_reclaim_bootloader_memory();
 
-#endif

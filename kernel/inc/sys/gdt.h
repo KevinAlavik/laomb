@@ -1,5 +1,4 @@
-#ifndef _GDT_H
-#define _GDT_H
+#pragma once
 
 #include <stdint.h>
 
@@ -58,5 +57,3 @@ extern tss_t tss;
 
 void gdt_init();
 void gdt_load();
-
-#endif

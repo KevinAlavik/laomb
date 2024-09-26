@@ -23,7 +23,7 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
 void main() {
 
-    for(;;);
+    for(;;) yield();
 }
 
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)

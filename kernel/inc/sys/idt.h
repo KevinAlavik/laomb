@@ -1,5 +1,4 @@
-#ifndef _IDT_H
-#define _IDT_H
+#pragma once
 
 #include <stdint.h>
 
@@ -53,5 +52,3 @@ typedef struct
 } __attribute__((packed)) idt_pointer_t;
 
 extern idt_pointer_t idt_ptr;
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _STRING_H
-#define _STRING_H
+#pragma once
 
 #include <stddef.h>
 
@@ -48,6 +47,3 @@ char* ltoa( long num, char* str, int base );
 char* lltoa( long long num, char* str, int base );
 long strtol( const char* str, char** endptr, int base );
 long long strtoll( const char* str, char** endptr, int base );
-
-
-#endif /* _CSTRING_H */

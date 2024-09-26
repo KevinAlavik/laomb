@@ -1,5 +1,4 @@
-#ifndef _PIC_H
-#define _PIC_H
+#pragma once
 
 #include <stdint.h>
 
@@ -15,5 +14,3 @@ void pic_mask(int irq);
 void pic_unmask(int irq);
 uint16_t pic_read_irqrr();
 uint16_t pic_read_isr();
-
-#endif

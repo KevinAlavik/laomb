@@ -1,6 +1,4 @@
-#ifndef _IO_H
-#define _IO_H
-
+#pragma once
 #include <stdint.h>
 
 void outb(uint16_t port, uint8_t value);
@@ -26,5 +24,3 @@ void io_memory_barrier();
 
 void invalidate_cache();
 void flush_cache(const void *addr);
-
-#endif

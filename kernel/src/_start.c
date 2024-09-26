@@ -11,6 +11,8 @@
 #include <sys/mm/vmm.h>
 #include <kheap.h>
 #include <ultra_protocol.h>
+#include <proc/task.h>
+#include <proc/sched.h>
 
 uintptr_t higher_half_base;
 
@@ -18,6 +20,11 @@ struct ultra_platform_info_attribute* platform_info_attrb = NULL;
 struct ultra_kernel_info_attribute* kernel_info_attrb = NULL;
 struct ultra_memory_map_attribute* memory_map = NULL;
 struct ultra_framebuffer_attribute* framebuffer = NULL;
+
+void main() {
+
+    for(;;);
+}
 
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
 {
@@ -59,6 +66,8 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
     pmm_memory_map = memory_map;
     pmm_reclaim_bootloader_memory();
 
-    sti();
+    struct task callback_task = task_create((uintptr_t)main, 0, 0, 20, kernel_page_directory);
+    sched_init(&callback_task);
+
     for(;;) ;
 }

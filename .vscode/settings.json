@@ -95,6 +95,7 @@
         "*.inc": "c",
         "rbtree.h": "c",
         "ata.h": "c",
-        "io.h": "c"
+        "io.h": "c",
+        "mbr.h": "c"
     }
 }

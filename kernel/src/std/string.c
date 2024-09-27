@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <limits.h>
+#include <kheap.h>
 
 #ifndef LLONG_MAX
 #define LLONG_MAX (sizeof(long long) * CHAR_BIT - 1)
@@ -9,7 +10,6 @@
 #ifndef LLONG_MIN
 #define LLONG_MIN (-LLONG_MAX - 1)
 #endif
-
 
 void* memcpy( void* dest, const void* src, size_t n ) {
     unsigned char* d = (unsigned char*)( dest );
@@ -547,4 +547,11 @@ long long strtoll( const char* str, char** endptr, int base ) {
     }
 
     return sign * result;
+}
+
+char* strdup( const char* s ) {
+    size_t len = strlen( s );
+    char* copy = kmalloc( len + 1 );
+    memcpy( copy, s, len + 1 );
+    return copy;
 }

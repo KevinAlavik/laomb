@@ -1,7 +1,7 @@
 #include <rbtree.h>
 #include <string.h>
 
-struct rb_node *rb_new_node(int key) {
+struct rb_node *rb_new_node(uintptr_t key) {
     struct rb_node *node = (struct rb_node *)kmalloc(sizeof(struct rb_node));
     node->key = key;
     node->color = RED;
@@ -80,11 +80,12 @@ void rb_insert_fixup(struct rb_tree *tree, struct rb_node *z) {
     tree->root->color = BLACK;
 }
 
-void rb_insert(struct rb_tree *tree, int key) {
+void rb_insert(struct rb_tree *tree, uintptr_t key) {
     struct rb_node *z = rb_new_node(key);
     struct rb_node *y = nullptr;
     struct rb_node *x = tree->root;
     
+    kprintf("z=0x%p, y=0x%p, x=0x%p\n", z, y, x);
     while (x != nullptr) {
         y = x;
         if (z->key < x->key)
@@ -118,7 +119,7 @@ struct rb_tree *create_tree() {
     return tree;
 }
 
-struct rb_node *rb_search(struct rb_tree *tree, int key) {
+struct rb_node *rb_search(struct rb_tree *tree, uintptr_t key) {
     struct rb_node *node = tree->root;
     while (node != nullptr && node->key != key) {
         if (key < node->key)
@@ -201,7 +202,7 @@ void rb_delete_fixup(struct rb_tree *tree, struct rb_node *x) {
 }
 
 
-void rb_delete(struct rb_tree *tree, int key) {
+void rb_delete(struct rb_tree *tree, uintptr_t key) {
     struct rb_node *z = rb_search(tree, key);
     if (z == nullptr)
         return;

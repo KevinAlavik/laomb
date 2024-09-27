@@ -24,3 +24,11 @@ void io_memory_barrier();
 
 void invalidate_cache();
 void flush_cache(const void *addr);
+
+uint8_t get_seconds();
+uint8_t get_minutes();
+uint8_t get_hours();
+uint8_t get_day_of_month();
+uint8_t get_month();
+uint8_t get_year();
+uint64_t get_rtc_timestamp();

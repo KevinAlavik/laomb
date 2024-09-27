@@ -86,6 +86,9 @@
         "mmu.h": "c",
         "slab.h": "c",
         "task.h": "c",
-        "kheap.h": "c"
+        "kheap.h": "c",
+        "vmm.h": "c",
+        "ramfs.h": "c",
+        "vfs.h": "c"
     }
 }

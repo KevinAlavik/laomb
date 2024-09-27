@@ -36,6 +36,13 @@ struct vfs_node {
     vfs_err_t (*create)(struct vfs_node *, const char *, vfs_node_type_t, struct vfs_node ** /* will be filled */);
 };
 
+struct vfs_mount {
+    struct vfs_node *mount_point;       // The directory in the main VFS where this is mounted
+    struct vfs_node *mounted_root;      // The root node of the mounted filesystem
+    struct vfs_mount *next;             // Pointer to next mount point
+};
+
+
 struct vfs_tree {
     struct vfs_node *root;               // Root directory node
 };
@@ -64,3 +71,4 @@ vfs_err_t read(HANDLE handle, uint32_t offset, uint32_t size, uint8_t* buffer);
 vfs_err_t write(HANDLE handle, uint32_t offset, uint32_t size, const uint8_t* buffer);
 
 extern struct vfs_tree *g_Vfs;
+extern struct vfs_mount *g_mounts;

@@ -190,6 +190,15 @@ struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path) {
     struct vfs_node *current = vfs->root;
 
     while (token) {
+        struct vfs_mount *mount = g_mounts;
+        while (mount) {
+            if (mount->mount_point == current) {
+                current = mount->mounted_root;
+                break;
+            }
+            mount = mount->next;
+        }
+
         current = vfs_search_node(current, token);
         if (!current) {
             kfree(path_copy);
@@ -197,6 +206,7 @@ struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path) {
         }
         token = strtok(nullptr, "/");
     }
+
     kfree(path_copy);
     return current;
 }
@@ -253,4 +263,70 @@ vfs_err_t read(HANDLE handle, uint32_t offset, uint32_t size, uint8_t* buffer) {
 vfs_err_t write(HANDLE handle, uint32_t offset, uint32_t size, const uint8_t* buffer) {
     if (!handle || !handle->write) return VFS_ERROR;
     return handle->write(handle, offset, size, buffer);
+}
+
+/**
+ * 
+ *          MOUNTING
+ * 
+ * 
+ */
+
+struct vfs_mount *g_mounts = nullptr;
+
+vfs_err_t vfs_mount(const char *target_path, struct vfs_node *filesystem_root) {
+    if (!g_Vfs || !target_path || !filesystem_root) return VFS_ERROR;
+    struct vfs_node *mount_point = vfs_traverse_path(g_Vfs, target_path);
+    if (!mount_point) return VFS_NOT_FOUND;
+
+    if (mount_point->type != VFS_RAMFS_FOLDER) return VFS_NOT_PERMITTED;
+
+    struct vfs_mount *new_mount = (struct vfs_mount *)kmalloc(sizeof(struct vfs_mount));
+    new_mount->mount_point = mount_point;
+    new_mount->mounted_root = filesystem_root;
+    new_mount->next = g_mounts;
+    g_mounts = new_mount;
+
+    filesystem_root->parent = mount_point;
+    if (!mount_point->children) {
+        mount_point->children = filesystem_root;
+    } else {
+        struct vfs_node *child = mount_point->children;
+        while (child->next) child = child->next;
+        child->next = filesystem_root;
+    }
+
+    return VFS_SUCCESS;
+}
+
+vfs_err_t vfs_unmount(const char *target_path) {
+    if (!g_Vfs || !target_path) return VFS_ERROR;
+
+    struct vfs_node *mount_point = vfs_traverse_path(g_Vfs, target_path);
+    if (!mount_point) return VFS_NOT_FOUND;
+
+    struct vfs_mount **prev_mount = &g_mounts;
+    struct vfs_mount *mount = g_mounts;
+
+    while (mount) {
+        if (mount->mount_point == mount_point) {
+            *prev_mount = mount->next;
+            if (mount_point->children == mount->mounted_root) {
+                mount_point->children = mount->mounted_root->next;
+            } else {
+                struct vfs_node *child = mount_point->children;
+                while (child && child->next != mount->mounted_root) {
+                    child = child->next;
+                }
+                if (child) child->next = mount->mounted_root->next;
+            }
+
+            kfree(mount);
+            return VFS_SUCCESS;
+        }
+        prev_mount = &mount->next;
+        mount = mount->next;
+    }
+
+    return VFS_NOT_FOUND;
 }

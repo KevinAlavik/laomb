@@ -18,6 +18,8 @@
 #include <proc/vfs.h>
 #include <proc/ramfs.h>
 
+#include <fs/ata.h>
+
 uintptr_t higher_half_base;
 
 struct ultra_platform_info_attribute* platform_info_attrb = NULL;
@@ -29,17 +31,7 @@ struct vfs_tree *g_Vfs = NULL;
 
 void main() {
     g_Vfs = vfs_initialize();
-    if (create("/rfs", VFS_RAMFS_FOLDER) != VFS_SUCCESS) {
-        kprintf("Failed to create /rfs\n");
-    }
-
-    if (create("/rfs/hello.txt", VFS_RAMFS_FILE) != VFS_SUCCESS) {
-        kprintf("Failed to create /rfs/hello.txt\n");
-    }
-    HANDLE file = open("/rfs/hello.txt"); 
-    if (write(file, 0, 13, (uint8_t*)"Hello World!") != VFS_SUCCESS) {
-        kprintf("Failed to write to /rfs/hello.txt\n");
-    }
+    ata_init(kernel_info_attrb->disk_index);
 
     for(;;) hlt();
 }
@@ -53,9 +45,6 @@ void main() {
     gdt_init();
     idt_init();
     pmm_init(ctx);
-
-    vmm_init_pd(&kernel_page_directory);
-    vmm_switch_pd(&kernel_page_directory);
 
     struct ultra_attribute_header* head = ctx->attributes;
 
@@ -82,8 +71,16 @@ void main() {
         }
     }
     pmm_memory_map = memory_map;
-    pmm_reclaim_bootloader_memory();
 
+    vmm_init_pd(&kernel_page_directory);
+
+    size_t framebuffer_size = framebuffer->fb.width * framebuffer->fb.height * 4;
+    vmm_unmap_page(&kernel_page_directory, 0xfc000000);
+    vmm_map_page(&kernel_page_directory, 0xfc000000, framebuffer_size, framebuffer->fb.physical_address, PAGE_PRESENT | PAGE_RW);
+    vmm_switch_pd(&kernel_page_directory);
+    memset((uint8_t*)0xfc000000, 0x12345432, framebuffer_size);
+    
+    pmm_reclaim_bootloader_memory();
     struct task callback_task = task_create((uintptr_t)main, 0, 0, 10000, kernel_page_directory);
     sched_init(&callback_task);
 

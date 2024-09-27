@@ -59,7 +59,7 @@ void timer_interrupt_handler(registers_t *regs) {
     if (current_task) {
         uintptr_t cr3;
         __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
-        current_task->cr3 = (vmm_context_t){ .pd = (PageDirectory*)cr3 };
+        current_task->cr3 = (vmm_context_t){ .cr3 = cr3 };
         current_task->cs = regs->cs; current_task->ds = regs->ds; current_task->es = regs->es; current_task->fs = regs->fs; current_task->gs = regs->gs;
         if (regs->cs != 0x08) {
             // coming from usaspac!
@@ -87,7 +87,7 @@ void timer_interrupt_handler(registers_t *regs) {
     schedule();
 
     if (current_task) {
-        __asm__ volatile("mov %0, %%cr3" : : "r"(current_task->cr3.pd));
+        __asm__ volatile("mov %0, %%cr3" : : "r"(current_task->cr3.cr3));
         regs->cs = current_task->cs; regs->ds = current_task->ds; regs->es = current_task->es; regs->fs = current_task->fs; regs->gs = current_task->gs;
         if (current_task->cs != 0x08) {
             // go to usaspac!

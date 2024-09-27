@@ -45,6 +45,7 @@ static inline uintptr_t setup_stack() {
 
 static inline struct task task_create(uintptr_t callback, uint32_t pid, uint32_t ppid, uint32_t priority, vmm_context_t cr3) {
     struct task new_task = {
+        .next = nullptr,
         .pid = pid,
         .ppid = ppid,
         .priority = priority,

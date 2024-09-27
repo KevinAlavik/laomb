@@ -3,6 +3,7 @@
 #include <kheap.h>
 #include <string.h>
 #include <io.h>
+#include <kprintf>
 
 /**
  * 
@@ -234,11 +235,15 @@ vfs_err_t create(const char* path, vfs_node_type_t type) {
     char parent_path[256];
     const char *name = strrchr(path, '/');
 
-    if (!name) return VFS_ERROR;
+    if (name == nullptr) return VFS_ERROR;
     
     size_t parent_len = name - path;
-    strncpy(parent_path, path, parent_len);
-    parent_path[parent_len] = '\0';
+    if (parent_len == 0) {
+        strcpy(parent_path, "/");
+    } else {
+        strncpy(parent_path, path, parent_len);
+        parent_path[parent_len] = '\0';
+    }
     
     struct vfs_node *parent_node = vfs_traverse_path(g_Vfs, parent_path);
     if (!parent_node) return VFS_NOT_FOUND;

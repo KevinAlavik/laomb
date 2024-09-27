@@ -28,7 +28,7 @@ hyper-bootloader:
 	@git clone https://github.com/UltraOS/Hyper.git --depth=1 --recurse-submodules $(HYPER_DIR)
 	@mkdir -p $(HYPER_DIR)/build
 	@cd $(HYPER_DIR)/build && cmake .. -DHYPER_ARCH=i686 -DHYPER_PLATFORM=bios -DCMAKE_TOOLCHAIN_FILE=$(EXTERNAL_DIR)/toolchain_i686_elf.cmake
-	@cd $(HYPER_DIR)/build && make	
+	@cd $(HYPER_DIR)/build && make -j$(nproc)
 
 reinstall-hyper:
 	@rm -rf $(HYPER_DIR)/

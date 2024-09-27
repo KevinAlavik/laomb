@@ -92,6 +92,8 @@
         "vfs.h": "c",
         "any": "c",
         "forward_list": "c",
-        "*.inc": "c"
+        "*.inc": "c",
+        "rbtree.h": "c",
+        "ata.h": "c"
     }
 }

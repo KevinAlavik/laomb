@@ -24,13 +24,14 @@ static inline void set_page_entry(page_table_entry* entry, uint32_t addr, uint32
 }
 
 void vmm_switch_pd(vmm_context_t* pageDirectory) {
-    pageDirectory->pd = (PageDirectory*)((uintptr_t)pageDirectory->pd - higher_half_base);
+    pageDirectory->cr3 = ((uintptr_t)pageDirectory->pd - higher_half_base);
     kprintf("Loading PD at paddr: 0x%p, vaddr: 0x%lx\n", pageDirectory->pd, ((uintptr_t)pageDirectory->pd + higher_half_base));
     __asm__ volatile(
         "mov %0, %%cr3\n"
-        : :"r"(pageDirectory->pd)
+        : :"r"(pageDirectory->cr3)
         : "memory"
     );
+    kprintf("Switched to PD at paddr: 0x%p, vaddr: 0x%lx\n", pageDirectory->pd, ((uintptr_t)pageDirectory->pd + higher_half_base));
 }
 
 void vmm_init_pd(vmm_context_t* page_directory) {
@@ -45,9 +46,36 @@ void vmm_init_pd(vmm_context_t* page_directory) {
     );
 
     for (uint32_t addr = 0; addr < 0x40000000; addr += PAGE_SIZE) {
-        // TODO: Check if the physical adress exist (memory map) and mark the rest as not present
-        if (!vmm_map_page(page_directory, higher_half_base + addr, PAGE_SIZE, addr, PAGE_PRESENT | PAGE_RW)) {
-            cli(); for(;;) hlt();
+        bool should_map = false;
+        for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+            struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
+
+            if (entry->type == ULTRA_MEMORY_TYPE_FREE || 
+                entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE || 
+                entry->type == ULTRA_MEMORY_TYPE_NVS ||
+                entry->type == ULTRA_MEMORY_TYPE_LOADER_RECLAIMABLE || 
+                entry->type == ULTRA_MEMORY_TYPE_KERNEL_STACK || 
+                entry->type == ULTRA_MEMORY_TYPE_MODULE || 
+                entry->type == ULTRA_MEMORY_TYPE_KERNEL_BINARY) {
+                
+                uintptr_t entry_start = entry->physical_address;
+                uintptr_t entry_end = entry->physical_address + entry->size;
+
+                if (addr >= entry_start && addr < entry_end) {
+                    should_map = true;
+                    break;
+                }
+            }
+        }
+        if (should_map) {
+            if (!vmm_map_page(page_directory, higher_half_base + addr, PAGE_SIZE, addr, PAGE_PRESENT | PAGE_RW)) {
+                kprintf("Failed to map 0x%p\n", addr);
+                cli(); for(;;) hlt();
+            }
+        } else {
+            if (!vmm_map_page(page_directory, higher_half_base + addr, PAGE_SIZE, addr, 0x0)) {
+                kprintf("Failed to map 0x%p not present!\n", addr);
+            }
         }
     }
     vmm_map_page(page_directory, (uintptr_t)__text_start, __text_end - __text_start, (uintptr_t)__text_start - higher_half_base, PAGE_PRESENT);

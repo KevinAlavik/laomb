@@ -51,6 +51,7 @@ extern char __text_start[], __text_end[], __rodata_start[], __rodata_end[], __da
 
 typedef struct {
 	PageDirectory* pd;
+	uintptr_t cr3;
 } __attribute__((packed)) vmm_context_t;
 
 extern vmm_context_t kernel_page_directory;

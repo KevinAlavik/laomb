@@ -94,6 +94,7 @@
         "forward_list": "c",
         "*.inc": "c",
         "rbtree.h": "c",
-        "ata.h": "c"
+        "ata.h": "c",
+        "io.h": "c"
     }
 }

@@ -31,7 +31,7 @@ struct vfs_tree *g_Vfs = NULL;
 
 void main() {
     g_Vfs = vfs_initialize();
-    ata_init(kernel_info_attrb->disk_index);
+    ata_init();
 
     for(;;) hlt();
 }

@@ -55,6 +55,7 @@ typedef struct {
 } __attribute__((packed)) vmm_context_t;
 
 extern vmm_context_t kernel_page_directory;
+extern uintptr_t higher_half_base;
 
 bool vmm_map_page(vmm_context_t* pageDirectory, uint32_t virtualAddress, size_t size, uint32_t physicalAddress, uint32_t flags);
 bool vmm_unmap_page(vmm_context_t* pageDirectory, uint32_t virtualAddress);

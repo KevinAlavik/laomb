@@ -1,56 +1,14 @@
 #pragma once
 
-#define STATUS_BSY 0x80
-#define STATUS_RDY 0x40
-#define STATUS_DRQ 0x08
-#define STATUS_DF 0x20
-#define STATUS_ERR 0x01
-
-#define ATA_MASTER_BASE 0x1F0
-#define ATA_SLAVE_BASE 0x170
-
-#define ATA_MASTER 0xE0
-#define ATA_SLAVE 0xF0
-
-#define ATA_REG_DATA 0x00
-#define ATA_REG_ERROR 0x01
-#define ATA_REG_FEATURES 0x01
-#define ATA_REG_SECCOUNT0 0x02
-#define ATA_REG_LBA0 0x03
-#define ATA_REG_LBA1 0x04
-#define ATA_REG_LBA2 0x05
-#define ATA_REG_HDDEVSEL 0x06
-#define ATA_REG_COMMAND 0x07
-#define ATA_REG_STATUS 0x07
-#define ATA_REG_SECCOUNT1 0x08
-#define ATA_REG_LBA3 0x09
-#define ATA_REG_LBA4 0x0A
-#define ATA_REG_LBA5 0x0B
-#define ATA_REG_CONTROL 0x0C
-#define ATA_REG_ALTSTATUS 0x0C
-#define ATA_REG_DEVADDRESS 0x0D
-
-#define ATA_CHANNEL_PRIMARY 0x1F7
-#define ATA_CHANNEL_SECONDARY 0x177
-#define ATA_PRIMARY_CONTROL 0x3F6
-#define ATA_SECONDARY_CONTROL 0x376
-
-
 #include <stdint.h>
 #include <stdbool.h>
 
+// ATA device types
 typedef enum {
     DEVICE_TYPE_UNKNOWN,
     DEVICE_TYPE_ATA,
     DEVICE_TYPE_ATAPI
 } device_type_t;
-
-typedef struct {
-    uint16_t base;
-    uint16_t control;
-    uint8_t dev_select;
-    device_type_t type;
-} ata_device_t;
 
 typedef enum {
     DISK_PRIMARY_MASTER = 0x80,
@@ -59,9 +17,64 @@ typedef enum {
     DISK_SECONDARY_SLAVE = 0x83
 } disk_type_t;
 
-extern uint8_t in_use_disk;
+// Status flags
+#define STATUS_BSY  0x80
+#define STATUS_RDY  0x40
+#define STATUS_DRQ  0x08
+#define STATUS_DF   0x20
+#define STATUS_ERR  0x01
+#define ATA_REG_STATUS 0x07
 
-void ata_init(uint8_t drive);
-void ata_set_in_use_disk(disk_type_t disk);
-void ata_read_sectors_pio(uint8_t *target_address, uint32_t LBA, uint8_t sector_count);
-void ata_write_sectors_pio(uint32_t LBA, uint8_t sector_count, uint8_t *rawBytes);
+// Control flags
+#define ATA_SOFT_RESET 0x4
+
+// DMA commands
+#define DMA_CMD_START  0x1
+#define DMA_CMD_STOP   0x0
+#define DMA_CMD_READ   0x8
+
+// Sizes
+#define SECTOR_SIZE 512
+#define PRDT_MAX_ENTRIES 16
+
+typedef struct prdt {
+    uint32_t buffer_phys;
+    uint16_t transfer_size;
+    uint16_t mark_end;
+} __attribute__((packed)) prdt_t;
+
+typedef struct ata_device {
+    uint16_t base;
+    uint16_t control;
+    uint16_t bmide_base;       // Bus Master IDE base address
+    uint8_t dev_select;
+    device_type_t type;
+
+    uint32_t prdt_count;
+    prdt_t prdt[PRDT_MAX_ENTRIES];
+    uint32_t prdt_phys_addr;
+
+    uint8_t *dma_buffer;
+    uint32_t dma_buffer_phys;
+
+    bool dma_enabled;
+} ata_device_t;
+
+void ata_init_device(ata_device_t *device, bool primary, bool master);
+void ata_read_sectors(ata_device_t *device, uint8_t *target, uint32_t LBA, uint8_t sector_count);
+void ata_write_sectors(ata_device_t *device, uint32_t LBA, uint8_t sector_count, uint8_t *source);
+
+// void ata_enable_dma(ata_device_t *device);
+// void ata_disable_dma(ata_device_t *device);
+// void ata_prepare_dma(ata_device_t *device, uint8_t *buffer, uint32_t size);
+// void ata_start_dma(ata_device_t *device);
+// void ata_stop_dma(ata_device_t *device);
+// void ata_dma_interrupt_handler(ata_device_t *device);
+
+void ata_reset(ata_device_t *device);
+void ata_wait_for_interrupt(ata_device_t *device);
+void ata_wait_BSY(ata_device_t *device);
+void ata_wait_DRQ(ata_device_t *device);
+void ata_init();
+
+extern ata_device_t devices[2][2]; // 2 primary/secondary channels, 2 master/slave devices each

@@ -200,3 +200,57 @@ struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path) {
     kfree(path_copy);
     return current;
 }
+
+
+/*
+ * 
+ * 
+ *          ABSTEACTED FUNCTIONS
+ * 
+ */
+
+vfs_err_t remove_p(const char* path) {
+    struct vfs_node *node = vfs_traverse_path(g_Vfs, path);
+    if (!node || !node->parent) return VFS_NOT_FOUND;
+    return node->parent->remove(node->parent, node);
+}
+
+vfs_err_t remove(HANDLE handle) {
+    if (!handle || !handle->parent) return VFS_NOT_FOUND;
+    return handle->parent->remove(handle->parent, handle);
+}
+
+vfs_err_t create(const char* path, vfs_node_type_t type) {
+    char parent_path[256];
+    const char *name = strrchr(path, '/');
+
+    if (!name) return VFS_ERROR;
+    
+    size_t parent_len = name - path;
+    strncpy(parent_path, path, parent_len);
+    parent_path[parent_len] = '\0';
+    
+    struct vfs_node *parent_node = vfs_traverse_path(g_Vfs, parent_path);
+    if (!parent_node) return VFS_NOT_FOUND;
+
+    struct vfs_node *new_node = NULL;
+    return parent_node->create(parent_node, name + 1, type, &new_node);
+}
+
+HANDLE open(const char* path) {
+    return vfs_traverse_path(g_Vfs, path);
+}
+
+vfs_err_t close(HANDLE handle) {
+    return handle ? VFS_SUCCESS : VFS_ERROR;
+}
+
+vfs_err_t read(HANDLE handle, uint32_t offset, uint32_t size, uint8_t* buffer) {
+    if (!handle || !handle->read) return VFS_ERROR;
+    return handle->read(handle, offset, size, buffer);
+}
+
+vfs_err_t write(HANDLE handle, uint32_t offset, uint32_t size, const uint8_t* buffer) {
+    if (!handle || !handle->write) return VFS_ERROR;
+    return handle->write(handle, offset, size, buffer);
+}

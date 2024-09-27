@@ -25,10 +25,21 @@ struct ultra_kernel_info_attribute* kernel_info_attrb = NULL;
 struct ultra_memory_map_attribute* memory_map = NULL;
 struct ultra_framebuffer_attribute* framebuffer = NULL;
 
-struct vfs_tree *vfs = NULL;
+struct vfs_tree *g_Vfs = NULL;
 
 void main() {
-    vfs = vfs_initialize();
+    g_Vfs = vfs_initialize();
+    if (create("/rfs", VFS_RAMFS_FOLDER) != VFS_SUCCESS) {
+        kprintf("Failed to create /rfs\n");
+    }
+
+    if (create("/rfs/hello.txt", VFS_RAMFS_FILE) != VFS_SUCCESS) {
+        kprintf("Failed to create /rfs/hello.txt\n");
+    }
+    HANDLE file = open("/rfs/hello.txt"); 
+    if (write(file, 0, 13, (uint8_t*)"Hello World!") != VFS_SUCCESS) {
+        kprintf("Failed to write to /rfs/hello.txt\n");
+    }
 
     for(;;) hlt();
 }

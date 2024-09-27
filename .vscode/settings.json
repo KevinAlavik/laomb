@@ -89,6 +89,9 @@
         "kheap.h": "c",
         "vmm.h": "c",
         "ramfs.h": "c",
-        "vfs.h": "c"
+        "vfs.h": "c",
+        "any": "c",
+        "forward_list": "c",
+        "*.inc": "c"
     }
 }

@@ -41,6 +41,8 @@ struct vfs_tree {
 };
 
 struct vfs_tree *vfs_initialize(); 
+
+// Do NOT call these as they ignore permissions
 struct vfs_node *vfs_create_node(const char *name, vfs_node_type_t type, struct vfs_node *parent);
 void vfs_insert_node(struct vfs_node *parent, struct vfs_node *node);
 
@@ -51,6 +53,14 @@ int vfs_write(struct vfs_node *file, uint32_t offset, uint32_t size, const uint8
 struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path);
 
 // Helpers to unify VFS node creation and manipulation
-vfs_err_t remove(const char* path);
+typedef struct vfs_node* HANDLE;
 
-extern struct vfs_tree *vfs;
+vfs_err_t remove_p(const char* path);
+vfs_err_t remove(HANDLE handle);
+vfs_err_t create(const char* path, vfs_node_type_t type);
+HANDLE open(const char* path);
+vfs_err_t close(HANDLE handle);
+vfs_err_t read(HANDLE handle, uint32_t offset, uint32_t size, uint8_t* buffer);
+vfs_err_t write(HANDLE handle, uint32_t offset, uint32_t size, const uint8_t* buffer);
+
+extern struct vfs_tree *g_Vfs;

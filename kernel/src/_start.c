@@ -21,36 +21,7 @@
 
 #include <fs/ata.h>
 #include <fs/mbr.h>
-
-uint8_t ctrl_pressed = 0;
-void key_interrupt_handler(registers_t* regs) {
-    uint8_t scancode = inb(0x60);
-
-    if (scancode == 0x1D) {
-        ctrl_pressed = 1;  // Left CTRL is pressed
-    } else if (scancode == (0x1D | 0x80)) {
-        ctrl_pressed = 0;  // Left CTRL is released
-    } else if (scancode == 0x1F && ctrl_pressed) {
-        kprintf("User triggered register dump!\n");
-        
-        kprintf("  eax = 0x%lx  ebx = 0x%lx  ecx = 0x%lx  edx = 0x%lx  esi = 0x%lx  edi = 0x%lx\n",
-               regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);
-
-        kprintf("  esp = 0x%lx  ebp = 0x%lx  eip = 0x%lx  eflags = 0x%lx\n",
-               regs->esp, regs->esp, regs->eip, regs->eflags);
-
-        kprintf("  cs = 0x%x  ds = 0x%x  es = 0x%x  fs = 0x%x  gs = 0x%x\n", 
-               regs->cs, regs->ds, regs->es, regs->fs, regs->gs);
-
-        uint32_t cr2;
-        uint32_t cr0;
-        uint32_t cr3;
-        __asm__ volatile ("mov %%cr2, %0" : "=r" (cr2));
-        __asm__ volatile ("mov %%cr0, %0" : "=r" (cr0));
-        __asm__ volatile ("mov %%cr3, %0" : "=r" (cr3));
-        kprintf("  cr2 = 0x%lx  cr0 = 0x%lx  cr3 = 0x%lx\n", cr2, cr0, cr3);
-    }
-}
+#include <fs/fat32.h>
 
 uintptr_t higher_half_base;
 
@@ -65,7 +36,7 @@ void main() {
     g_Vfs = vfs_initialize();
     ata_init();
     mbr_parse();
-
+    
     for(;;) hlt();
 }
 
@@ -116,7 +87,7 @@ void main() {
     
     pmm_reclaim_bootloader_memory();
     
-    irq_register_handler(1, key_interrupt_handler);
+    
 
     struct task callback_task = task_create((uintptr_t)main, 0, 0, 10000, kernel_page_directory);
     sched_init(&callback_task);

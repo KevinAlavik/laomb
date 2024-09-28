@@ -21,8 +21,8 @@ void mbr_parse()
         if (mbr_.partitions[i].boot_indicator == 0x80) {
             boot_mbr = i;
         }
-    }    
-    kprintf("Booted of partition %d\n", boot_mbr);
+    }
+    kprintf("Booted of partition %d, lba offset %d\n", boot_mbr, mbr[boot_mbr].lba_offset);
 }
 
 bool mbr_read_sector(partition_t* disk, uint32_t lba, uint8_t sectors, uint8_t* lowerDataOut)
@@ -30,7 +30,7 @@ bool mbr_read_sector(partition_t* disk, uint32_t lba, uint8_t sectors, uint8_t* 
 	if (lba+disk->lba_offset >=disk->part_size) {
 		return false;
 	}
-	ata_read_sectors_pio(lowerDataOut, lba+disk->lba_offset, sectors);
+	ata_read_sectors_pio(lowerDataOut, (lba+disk->lba_offset), sectors);
 	return true;
 }
 

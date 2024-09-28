@@ -7,6 +7,7 @@
 #include <sys/gdt.h>
 #include <sys/idt.h>
 #include <sys/pic.h>
+#include <sys/pci.h>
 #include <sys/mm/pmm.h>
 #include <sys/mm/vmm.h>
 #include <kheap.h>
@@ -77,6 +78,7 @@ void main() {
     gdt_init();
     idt_init();
     pmm_init(ctx);
+    pci_init();
 
     struct ultra_attribute_header* head = ctx->attributes;
 

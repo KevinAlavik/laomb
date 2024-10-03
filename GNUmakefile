@@ -25,17 +25,36 @@ disk:
 	@mcopy -i $(BUILD_DIR)/image.hdd@@1M $(BUILD_DIR)/kernel.bin kernel/cfg/hyper.cfg $(BUILD_DIR)/initramfs.img ::/
 
 hyper-bootloader:
-	@git clone https://github.com/UltraOS/Hyper.git --depth=1 --recurse-submodules $(HYPER_DIR)
+	@rm -rf $(HYPER_DIR)/build
 	@mkdir -p $(HYPER_DIR)/build
 	@cd $(HYPER_DIR)/build && cmake .. -DHYPER_ARCH=i686 -DHYPER_PLATFORM=bios -DCMAKE_TOOLCHAIN_FILE=$(EXTERNAL_DIR)/toolchain_i686_elf.cmake
-	@cd $(HYPER_DIR)/build && make -j$(nproc)
+	@cd $(HYPER_DIR)/build && make VERBOSE=1 -j$(nproc) 
 
 reinstall-hyper:
 	@rm -rf $(HYPER_DIR)/
+	@git clone https://github.com/UltraOS/Hyper.git --depth=1 --recurse-submodules $(HYPER_DIR)
 	@make hyper-bootloader
-		
+
+installer: hyper-bootloader release
+	@echo "Creating installer floppy image..."
+	@rm -f $(BUILD_DIR)/floppy.img
+	@dd if=/dev/zero of=$(BUILD_DIR)/floppy.img bs=512 count=2880
+	@mformat -i $(BUILD_DIR)/floppy.img -f 1440 ::
+	@mcopy -i $(BUILD_DIR)/floppy.img $(BUILD_DIR)/kernel.bin kernel/cfg/hyper.cfg $(HYPER_DIR)/installer/hyper_install.exe ::/
+	@echo "Installer floppy image created at $(BUILD_DIR)/floppy.img"
+
+installer-run: installer
+	@rm -f $(BUILD_DIR)/installer_test.img
+	@qemu-img create -f raw $(BUILD_DIR)/installer_test.img 1G
+	@parted $(BUILD_DIR)/installer_test.img mklabel msdos
+	@parted $(BUILD_DIR)/installer_test.img mkpart primary fat32 1MiB 100%
+	@mformat -i $(BUILD_DIR)/installer_test.img@@1M
+
+	qemu-system-i386 -fda Dos6.22.img -drive file=$(BUILD_DIR)/floppy.img,format=raw,if=floppy,index=1 \
+	                 -hda $(BUILD_DIR)/installer_test.img -boot b -m 32
+
 run:
-	@clear
+	@clear	
 	@qemu-system-i386 -drive format=raw,file=$(BUILD_DIR)/image.hdd,if=ide,index=0 \
 		-m 64M -cpu pentium \
 		-machine pc-i440fx-2.9,acpi=off \
@@ -61,9 +80,8 @@ debug:
 		sleep 2 && \
 		gdb -ex "file $(BUILD_DIR)/kernel.bin" -ex "target remote localhost:1234"
 
-release:
+release: kernel
 	@$(STRIP) $(BUILD_DIR)/kernel.bin
-	@make run
 
 clean:
 	@clear
@@ -76,4 +94,4 @@ reset:
 	@clear
 	@make
 
-.PHONY: all kernel disk ramfs run clean reset reinstall-hyper release
+.PHONY: all kernel disk ramfs run clean reset reinstall-hyper release installer installer-run

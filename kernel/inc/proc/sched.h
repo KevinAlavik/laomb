@@ -4,6 +4,9 @@
 #include <sys/idt.h>
 #include <stdint.h>
 
+extern struct task *current_task;
+
+int get_pid();
 void sched_init(struct task *callback_task);
 
 void sched_add_task(struct task *new_task);

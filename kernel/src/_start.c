@@ -23,6 +23,9 @@
 #include <fs/mbr.h>
 #include <fs/fat32.h>
 
+#include <fshell/framebuffer.h>
+#include <fshell/init.h>
+
 uintptr_t higher_half_base;
 
 struct ultra_platform_info_attribute* platform_info_attrb = NULL;
@@ -37,7 +40,17 @@ void main() {
     ata_init();
     mbr_parse();
     
-    for(;;) hlt();
+    char *folderPath = kmalloc(512);
+    sprintf_(folderPath, "/%lx:%lx", kernel_info_attrb->disk_index, kernel_info_attrb->partition_index);
+    if (create(folderPath, VFS_RAMFS_FOLDER) != VFS_SUCCESS) {
+        kprintf("Failed to create directory.\n");
+        return;
+    }
+    kfree(folderPath);
+
+
+    fshell_callback();
+    for(;;) { yield(); }
 }
 
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
@@ -84,10 +97,10 @@ void main() {
     vmm_map_page(&kernel_page_directory, 0xfc000000, framebuffer_size, framebuffer->fb.physical_address, PAGE_PRESENT | PAGE_RW);
     vmm_switch_pd(&kernel_page_directory);
     memset((uint8_t*)0xfc000000, 0x12345432, framebuffer_size);
+    set_background_color(0x12345432);
     
     pmm_reclaim_bootloader_memory();
-    
-    
+    init_fshell();       
 
     struct task callback_task = task_create((uintptr_t)main, 0, 0, 10000, kernel_page_directory);
     sched_init(&callback_task);

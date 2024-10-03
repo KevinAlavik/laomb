@@ -96,6 +96,14 @@
         "rbtree.h": "c",
         "ata.h": "c",
         "io.h": "c",
-        "mbr.h": "c"
+        "mbr.h": "c",
+        "init.h": "c",
+        "common.h": "c",
+        "framebuffer.h": "c",
+        "fat32.h": "c",
+        "complex": "c",
+        "set": "c",
+        "unordered_set": "c",
+        "why are u using the goofy interrupt call": "c"
     }
 }

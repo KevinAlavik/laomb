@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <sys/gdt.h>
 #include <kheap.h>
+#include <string.h>
 #include <sys/mm/vmm.h>
 
 #define STACK_SIZE 0x1000

@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-typedef struct {
+typedef struct mutex {
     volatile int locked;
 } mutex_t;
 

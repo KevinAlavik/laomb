@@ -7,12 +7,20 @@
 #include <io.h>
 #include <string.h>
 
-static struct task *current_task = NULL;
-static struct task *task_list = NULL;
+struct task *current_task = nullptr;
+static struct task *task_list = nullptr;
+
+int last_pid = 0;
+int get_pid() {
+    last_pid++;
+    return last_pid;
+}
 
 void sched_add_task(struct task *new_task) {
+    cli();
     new_task->next = task_list;
     task_list = new_task;
+    sti();
 }
 
 void sched_remove_task(uint32_t pid) {
@@ -25,19 +33,23 @@ void sched_remove_task(uint32_t pid) {
         *indirect = removed->next;
         kfree(removed);
     }
+    if (current_task && current_task->pid == pid) {
+        current_task = task_list;
+    }
+    yield();
 }
 
 void schedule() {
     struct task *next_task = current_task ? current_task->next : task_list;
 
-    if (next_task == NULL) {
+    if (next_task == nullptr) {
         next_task = task_list;
     }
 
-    while (next_task != NULL && next_task->state != TASK_READY) {
+    while (next_task != nullptr && next_task->state != TASK_READY) {
         next_task = next_task->next;
 
-        if (next_task == NULL) {
+        if (next_task == nullptr) {
             next_task = task_list;
         }
 
@@ -46,7 +58,7 @@ void schedule() {
         }
     }
 
-    if (next_task != NULL && next_task != current_task) {
+    if (next_task != nullptr && next_task != current_task) {
         // kprintf("Switching to task %d, EIP: 0x%lx\n", next_task->pid, next_task->eip);
         current_task = next_task;
     } else {

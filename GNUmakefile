@@ -86,8 +86,7 @@ release: kernel
 clean:
 	@clear
 	@make -C kernel/ clean
-	@rm -rf $(BUILD_DIR)/image.hdd $(BUILD_DIR)/image.iso iso_root/ $(BUILD_DIR)/initramfs.img
-	@rm -rf $(BUILD_DIR)/serial_output.txt $(BUILD_DIR)/qemu_log.txt
+	@rm -rf $(BUILD_DIR)/
 
 reset:
 	@make clean

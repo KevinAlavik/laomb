@@ -3,25 +3,6 @@
 #include <stdint.h>
 
 typedef struct {
-    uint16_t limit;
-    uint16_t base_low;  
-    uint8_t base_mid;
-    uint8_t access;
-    uint8_t granularity;
-    uint8_t base_high;  
-} __attribute__((packed)) gdt_entry_t;
-
-typedef struct {
-    gdt_entry_t entries[5];
-    gdt_entry_t tss;
-} __attribute__((packed)) gdt_t;
-
-typedef struct {
-    uint16_t limit;
-    uint32_t base;
-} __attribute__((packed)) gdt_pointer_t;
-
-typedef struct {
     uint32_t prev_tss;   // Previous TSS
     uint32_t esp0;       // Stack pointer to load when changing to kernel mode
     uint32_t ss0;        // Stack segment to load when changing to kernel mode
@@ -51,8 +32,6 @@ typedef struct {
     uint16_t iomap_base; // I/O map base address
 } __attribute__((packed)) tss_t;
 
-extern gdt_t g_gdt;
-extern gdt_pointer_t g_gdt_ptr;
 extern tss_t g_tss;
 
 void tss_init();

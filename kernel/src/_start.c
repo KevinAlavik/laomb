@@ -13,6 +13,7 @@ struct ultra_memory_map_attribute* memory_map = NULL;
 struct ultra_framebuffer_attribute* framebuffer = NULL;
 
 #include <sys/gdt.h>
+#include <sys/idt.h>
 
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
 {
@@ -21,6 +22,7 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
     tss_init();
     gdt_load();
+    idt_init();
 
     for(;;) ;
 }

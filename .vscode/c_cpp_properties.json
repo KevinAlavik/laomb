@@ -7,7 +7,8 @@
                 "${workspaceFolder}/kernel/cfg"
             ],
             "defines": [
-                "__STDC_VERSION__=200710L"
+                "__STDC_VERSION__=200710L",
+                "nullptr=(void*)0"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c23",

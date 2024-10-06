@@ -14,24 +14,24 @@ An i586 OS built from scratch, targeting a Pentium MMX using the Hyper bootloade
 - [ ] **Interrupt Management**
     - [ ] IDT and IRQ Handling using Intel 8259
     - [ ] Basic ISR Support (Exception Handling)
-    - [ ] User Mode Interrupts (Planned)
+    - [ ] User Mode Interrupts
 - [ ] **Memory Management**
     - [ ] Bitmap Physical Memory Management
     - [ ] Linear Memory Manager using IA-32 Paging
     - [ ] Kernel Virtual Memory Allocator (Heap)
-    - [ ] On-Demand Paging with On-Disk Paging Out (Planned)
+    - [ ] On-Demand Paging with On-Disk Paging Out
     - [ ] Hardware Memory Passthrough (DMA, Framebuffer, etc)
 - [ ] **Scheduler**
-    - [ ] Basic Round Robin Scheduler `Planned to be replaced with a priority scheduler`
-    - [ ] Preemptive Scheduler
-    - [ ] Blocking and Waiting for Resources (Planned)
-    - [ ] Priority-Based Scheduler (Planned)
-    - [ ] Multi-threading Support (Planned)
+    - [ ] Basic Priority-Based Robin Scheduler
+    - [ ] Cooperative Scheduler
+    - [ ] Blocking and Waiting for Resources
+    - [ ] Priority-Based Scheduler
+    - [ ] Multi-threading Support
 - [ ] **Virtual Filesystem (VFS)**
     - [ ] Basic RAM-Filesystem
     - [ ] VFS Mounting and Integration
     - [ ] Real Filesystem Integration (FAT32/Ext2)
-    - [ ] VFS-Based File Permissions (Planned)
+    - [ ] VFS-Based File Permissions
     - [ ] Special Filesystems
         - [ ] Standart Input and Output with Child to Parent Redirection VFS Devices (`/stdin` `/stdout`)
         - [ ] Random Access Memory Passthrough VFS Device (`/mem`)
@@ -40,8 +40,8 @@ An i586 OS built from scratch, targeting a Pentium MMX using the Hyper bootloade
         - [ ] VFS Based IPC Devices
 - [ ] **Device Management**
     - [ ] PCI Device Detection and Management
-    - [ ] Floppy Disk Driver (Planned)
-    - [ ] CD-ROM Driver (Planned)
+    - [ ] Floppy Disk Driver
+    - [ ] CD-ROM Driver
     - [ ] HDD Driver (ATA/DMA Integration)
     - [ ] PS/2 Keyboard and Mouse Drivers
 - [ ] **I/O Subsystem**
@@ -49,24 +49,24 @@ An i586 OS built from scratch, targeting a Pentium MMX using the Hyper bootloade
     - [ ] Block Device Driver Framework
     - [ ] I/O Port and MMIO Access Abstractions
 - [ ] **Disk Drivers**
-    - [ ] ATA PIO (Currently Broken)
+    - [ ] ATA PIO
     - [ ] MBR Parsing
-    - [ ] Raw FAT32 Driver (Possibly Broken)
-    - [ ] Ext2 Driver (Planned)
-    - [ ] DMA Handling for ATA (Planned)
+    - [ ] Raw FAT32 Driver
+    - [ ] Ext2 Driver
+    - [ ] DMA Handling for ATA
 - [ ] **Process Management**
     - [ ] Process Creation and Destruction
     - [ ] Context Switching
     - [ ] Full Process States (Running, Waiting, Blocked)
-    - [ ] Signal Handling (Planned)
-    - [ ] Process Prioritization (Planned)
+    - [ ] Signal Handling
+    - [ ] Process Prioritization
 - [ ] **Userspace Calls Interface**
     - [ ] Basic System Call Implementation
     - [ ] Entering and Exiting Userspace
     - [ ] Elf32 Parsing
 - [ ] **Inter-Process Communication (IPC)**
     - [ ] Shared Memory
-    - [ ] Message Queues (Planned, as interrupt blocking is planned to be based on queues)
+    - [ ] Message Queues
     - [ ] Semaphores and Mutexes
 
 ### 2. Userspace
@@ -77,8 +77,8 @@ An i586 OS built from scratch, targeting a Pentium MMX using the Hyper bootloade
     - [ ] Userspace Shell
     - [ ] Loading commands with children tasks
 - [ ] **Graphics Composer Service**
-    - [ ] Framebuffer Rendering Service with Double Buffering (Planned)
-    - [ ] Window Management Service (Planned)
+    - [ ] Framebuffer Rendering Service with Double Buffering
+    - [ ] Window Management Service
 
 ### 3. File Systems
 - [ ] **RAMFS** (Basic Read/Write Support)

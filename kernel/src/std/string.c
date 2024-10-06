@@ -2,7 +2,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <limits.h>
-#include <kheap.h>
 
 #ifndef LLONG_MAX
 #define LLONG_MAX (sizeof(long long) * CHAR_BIT - 1)
@@ -549,9 +548,9 @@ long long strtoll( const char* str, char** endptr, int base ) {
     return sign * result;
 }
 
-char* strdup( const char* s ) {
-    size_t len = strlen( s );
-    char* copy = kmalloc( len + 1 );
-    memcpy( copy, s, len + 1 );
-    return copy;
-}
+// char* strdup( const char* s ) {
+//     size_t len = strlen( s );
+//     char* copy = kmalloc( len + 1 );
+//     memcpy( copy, s, len + 1 );
+//     return copy;
+// }

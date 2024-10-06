@@ -48,7 +48,6 @@ void main() {
     }
     kfree(folderPath);
 
-
     fshell_callback();
     for(;;) { yield(); }
 }

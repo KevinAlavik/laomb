@@ -12,8 +12,8 @@ An i586 OS built from scratch, targeting a Pentium MMX using the Hyper bootloade
 
 ### 1. Kernel
 - [ ] **Interrupt Management**
-    - [x] IDT and IRQ Handling using Intel 8259
-    - [x] Basic ISR Support (Exception Handling)
+    - [X] IDT and IRQ Handling using Intel 8259
+    - [X] Basic ISR Support (Exception Handling)
     - [ ] User Mode Interrupts
 - [ ] **Memory Management**
     - [ ] Bitmap Physical Memory Management

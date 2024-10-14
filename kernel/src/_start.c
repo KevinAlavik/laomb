@@ -14,6 +14,7 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
 #include <sys/gdt.h>
 #include <sys/idt.h>
+#include <sys/pic.h>
 
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
 {

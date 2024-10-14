@@ -46,7 +46,7 @@ g_gdt:
     db 0x00                  ; base_high
 
     ; TSS descriptor
-    dw 0x0000                ; limit
+    dw 0x0067                ; limit
     dw 0x0000                ; base_low
     db 0x00                  ; base_mid
     db 0x89                  ; access
@@ -83,29 +83,7 @@ tss_init:
     push ebp
     mov ebp, esp
 
-    lea eax, [g_tss]
-    mov dword [g_gdt + 2], eax
-    shr eax, 16
-    mov byte [g_gdt + 4], al
-    shr eax, 8
-    mov byte [g_gdt + 5], al
-
-    mov eax, 104
-    mov word [g_gdt], ax
-
-    mov ax, [g_gdt + 6]
-    and ax, 0x0F00
-    or ax, word [eax]
-    mov [g_gdt + 6], ax
-
-    lea edi, [g_tss]
-    mov ecx, 104
-    xor eax, eax
-    rep stosb
-
-    mov word [g_tss + 4], 0x10
-    mov eax, esp
-    mov dword [g_tss + 1], eax
+    ;; TODO
     
     pop ebp
     ret

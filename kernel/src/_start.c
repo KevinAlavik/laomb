@@ -52,7 +52,6 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
                 break;
         }
     }
-    cli();
     pmm_memory_map = memory_map;
     mmu_init_pd(&kernel_page_directory);
 

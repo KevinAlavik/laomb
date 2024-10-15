@@ -18,15 +18,20 @@
 #define USE_CASE5
 
 //TODO: Mutexes?
+int interrupt_flag;
 extern int liballoc_lock() {
+	interrupt_flag = is_interrupts_enabled();
 	cli();
 	return 0;
 }
 extern int liballoc_unlock()
 {
-	sti();
+	if (interrupt_flag)
+		sti();
+	interrupt_flag = 0;
 	return 0;
 }
+
 extern uintptr_t higher_half_base;
 
 extern void* liballoc_alloc(size_t pages)

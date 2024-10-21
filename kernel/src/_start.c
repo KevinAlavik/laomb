@@ -19,6 +19,15 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 #include <sys/pmm.h>
 #include <sys/mmu.h>
 
+#include <proc/sched.h>
+
+[[noreturn]] void main() {
+
+    
+
+    for (;;) { }
+}
+
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
 {
     cli();
@@ -58,5 +67,7 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
     mmu_switch_pd(&kernel_page_directory);
     pmm_reclaim_bootloader_memory();
 
-    for(;;) ;
+    struct JCB* callback = scheduler_create_job((uintptr_t)main, 1000000);
+    scheduler_init(callback);
+    __builtin_unreachable();
 }

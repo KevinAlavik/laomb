@@ -2,17 +2,6 @@
 #include <proc/sched.h>
 #include <string.h>
 
-void mutex_init(struct Mutex* mutex, const char* name) {
-    mutex->lock = 0;
-    if (name) {
-        strncpy(mutex->name, name, MUTEX_NAME_SIZE - 1);
-        mutex->name[MUTEX_NAME_SIZE - 1] = '\0';
-    } else {
-        mutex->name[0] = '\0';
-    }
-    mutex->owner_pid = 0;
-}
-
 void mutex_lock(struct Mutex* mutex) {
     while (__sync_lock_test_and_set(&mutex->lock, 1)) {
         yield();

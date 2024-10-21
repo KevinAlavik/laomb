@@ -17,18 +17,16 @@
 #define USE_CASE4
 #define USE_CASE5
 
-//TODO: Mutexes?
-int interrupt_flag;
+#include <proc/mutex.h>
+struct Mutex liballoc_mutex = {0, 0};
+
 extern int liballoc_lock() {
-	interrupt_flag = is_interrupts_enabled();
-	cli();
+	mutex_lock(&liballoc_mutex);
 	return 0;
 }
 extern int liballoc_unlock()
 {
-	if (interrupt_flag)
-		sti();
-	interrupt_flag = 0;
+	mutex_unlock(&liballoc_mutex);
 	return 0;
 }
 

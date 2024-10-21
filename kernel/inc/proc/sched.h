@@ -65,6 +65,8 @@ struct UserQueue {
 };
 extern struct UserQueue* user_queues;
 
+extern struct JCB* current_job;
+
 uintptr_t job_get_jcb(uint64_t pid);
 
 void job_reset_priority(struct JCB* job);

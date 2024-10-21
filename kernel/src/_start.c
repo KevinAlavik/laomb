@@ -20,10 +20,11 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 #include <sys/mmu.h>
 
 #include <proc/sched.h>
+#include <proc/vfs.h>
 
 [[noreturn]] void main() {
+    g_Vfs = vfs_initialize();
 
-    
 
     for (;;) { }
 }

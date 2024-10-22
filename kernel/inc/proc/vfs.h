@@ -34,6 +34,7 @@ struct vfs_node {
     uint64_t creation_time;
     uint64_t modification_time;
     char owner_name[70];
+    uint32_t open_count;
 
     vfs_err_t (*read)(struct vfs_node *, uint32_t, uint32_t, uint8_t *);
     vfs_err_t (*write)(struct vfs_node *, uint32_t, uint32_t, const uint8_t *);
@@ -65,3 +66,5 @@ int vfs_read(struct vfs_node *file, uint32_t offset, uint32_t size, uint8_t *buf
 int vfs_write(struct vfs_node *file, uint32_t offset, uint32_t size, const uint8_t *buffer);
 struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path);
 
+vfs_err_t vfs_mount(const char *target_path, struct vfs_node *filesystem_root);
+vfs_err_t vfs_unmount(const char *target_path);

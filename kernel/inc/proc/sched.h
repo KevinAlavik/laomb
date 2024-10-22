@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <sys/idt.h>
 #include <sys/mmu.h>
+#include <proc/vfs.h>
 
 #define JOB_KERNEL_STACK_SIZE 4096
 
@@ -29,8 +30,10 @@ struct JCB {
     
     uint64_t priority;
     uint64_t base_priority;
+    
+    
+    // todo IPC stuff
 
-    // todo VFS and IPC stuff
     struct JCB* next;
     struct JCB* parent;
 };

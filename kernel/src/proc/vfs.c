@@ -1,8 +1,25 @@
 #include <proc/vfs.h>
+#include <proc/sched.h>
 #include <kheap.h>
 #include <string.h>
 #include <io.h>
 #include <kprintf>
+
+bool has_permission(struct vfs_node *node, enum VFS_PERMISSIONS required) {
+    if (strcmp(current_job->job_owner_name, "root") == 0) {
+        return true;
+    }
+
+    if (strcmp(current_job->job_owner_name, node->owner_name) == 0) {
+        return true;
+    }
+
+    if ((node->flags & required) == required) {
+        return true;
+    }
+
+    return false;
+}
 
 struct vfs_ramfs_node {
     struct vfs_node base;
@@ -84,7 +101,7 @@ struct vfs_tree *vfs_initialize() {
     struct vfs_ramfs_node *ramfs_root = (struct vfs_ramfs_node *)kmalloc(sizeof(struct vfs_ramfs_node));
     struct vfs_node *root = &ramfs_root->base;
 
-    strncpy(root->owner_name, "root", 70); // TODO Get the current task owner name
+    strncpy(root->owner_name, "root", 70);
 
     root->name = strdup("/");
     root->type = VFS_RAMFS_FOLDER;
@@ -118,8 +135,7 @@ struct vfs_node *vfs_create_node(const char *name, enum VFS_TYPE type, struct vf
     } else {
         return nullptr;
     }
-
-    strncpy(node->owner_name, "root", 70); // TODO Get the current task owner name
+    strncpy(node->owner_name, "root", 70);
 
     node->name = strdup(name);
     node->type = type;
@@ -230,10 +246,12 @@ struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path) {
     return current;
 }
 
- // TODO Check the scheduler if current task has rights
 vfs_err_t ramfs_read(struct vfs_node *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
     struct vfs_ramfs_node *ramfs_node = (struct vfs_ramfs_node *)node;
     if (node->type != VFS_RAMFS_FILE) return VFS_NOT_PERMITTED;
+
+    if (!has_permission(node, VFS_READ)) return VFS_NOT_PERMITTED;
+
     memcpy(buffer, ramfs_node->data + offset, size);
     return VFS_SUCCESS;
 }
@@ -241,6 +259,8 @@ vfs_err_t ramfs_read(struct vfs_node *node, uint32_t offset, uint32_t size, uint
 vfs_err_t ramfs_write(struct vfs_node *node, uint32_t offset, uint32_t size, const uint8_t *buffer) {
     struct vfs_ramfs_node *ramfs_node = (struct vfs_ramfs_node *)node;
     if (node->type != VFS_RAMFS_FILE) return VFS_NOT_PERMITTED;
+
+    if (!has_permission(node, VFS_WRITE)) return VFS_NOT_PERMITTED;
 
     if (ramfs_node->data == nullptr) {
         ramfs_node->data = (uint8_t *)kmalloc(size);
@@ -264,12 +284,14 @@ vfs_err_t ramfs_create(struct vfs_node *parent, const char *name, enum VFS_TYPE 
     struct vfs_ramfs_node *ramfs_node = (struct vfs_ramfs_node *)(*new_node);
     ramfs_node->data = nullptr;
 
-    parent->modification_time = get_rtc_timestamp();            
+    parent->modification_time = get_rtc_timestamp();
     return VFS_SUCCESS;
 }
 
 vfs_err_t ramfs_remove(struct vfs_node *parent, struct vfs_node *node) {
     if (parent->type != VFS_RAMFS_FOLDER) return VFS_NOT_PERMITTED;
+
+    if (!has_permission(parent, VFS_WRITE)) return VFS_NOT_PERMITTED; 
 
     vfs_remove_node(parent, node);
 
@@ -280,12 +302,18 @@ vfs_err_t ramfs_remove(struct vfs_node *parent, struct vfs_node *node) {
 
 vfs_err_t ramfs_chmod(struct vfs_node *node, enum VFS_PERMISSIONS flags) {
     if (node->type != VFS_RAMFS_FILE) return VFS_NOT_PERMITTED;
+
+    if (strcmp(current_job->job_owner_name, node->owner_name) != 0) return VFS_NOT_PERMITTED;
+
     node->flags = flags;
     return VFS_SUCCESS;
 }
 
 vfs_err_t ramfs_chown(struct vfs_node *node, const char *name) {
     if (node->type != VFS_RAMFS_FILE) return VFS_NOT_PERMITTED;
+
+    if (strcmp(current_job->job_owner_name, "root") != 0) return VFS_NOT_PERMITTED;
+
     strncpy(node->owner_name, name, 70);
     return VFS_SUCCESS;
 }

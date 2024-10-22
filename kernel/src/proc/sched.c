@@ -217,6 +217,7 @@ struct JCB* scheduler_create_job(uintptr_t callback, uint64_t priority)
     memset(&job->regs, 0, sizeof(job->regs));
     job->fpu_enabled = false;
     memset(job->fpu_state, 0, sizeof(job->fpu_state));
+    strncpy(job->job_owner_name, "root", 70);
     job->ctx = kernel_page_directory;
     job->code_segment_base = NULL;
     job->code_segment_len = 0;

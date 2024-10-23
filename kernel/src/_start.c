@@ -12,6 +12,7 @@ struct ultra_platform_info_attribute* platform_info_attrb = NULL;
 struct ultra_kernel_info_attribute* kernel_info_attrb = NULL;
 struct ultra_memory_map_attribute* memory_map = NULL;
 struct ultra_framebuffer_attribute* framebuffer = NULL;
+struct ultra_module_info_attribute* initrd_module = NULL;
 
 #include <sys/gdt.h>
 #include <sys/idt.h>
@@ -22,8 +23,29 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 #include <proc/sched.h>
 #include <proc/vfs.h>
 
+#include <driver/initrd.h>
+
+void vfs_print_contents(struct vfs_node* node, int depth) {
+    if (!node) return;
+    for (int i = 0; i < depth; i++) {
+        kprintf("  ");
+    }
+    kprintf("%s\n", node->name);
+    if (node->type == VFS_RAMFS_FOLDER) {
+        struct vfs_node* child = node->children;
+        while (child) {
+            vfs_print_contents(child, depth + 1);
+            child = child->next;
+        }
+    }
+}
+
 [[noreturn]] void main() {
     g_Vfs = vfs_initialize();
+    struct vfs_node* ramfs = vfs_create_node("/ramfs", VFS_RAMFS_FOLDER, g_Vfs->root);
+
+    uintptr_t initrd_base = initrd_module->address + higher_half_base;
+    initrd_load(ramfs, (const uint8_t*)initrd_base, initrd_module->size);
 
     for (;;) { }
 }
@@ -56,6 +78,10 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
             case ULTRA_ATTRIBUTE_FRAMEBUFFER_INFO:
                 framebuffer = kmalloc(head->size);
                 memcpy(framebuffer, head, head->size);
+                break;
+            case ULTRA_ATTRIBUTE_MODULE_INFO:
+                initrd_module = kmalloc(head->size);
+                memcpy(initrd_module, head, head->size);
                 break;
             default:
                 break;

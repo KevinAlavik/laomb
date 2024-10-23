@@ -150,3 +150,19 @@ void pmm_reclaim_bootloader_memory() {
         }
     }
 }
+void pmm_reclaim_module_memory() {
+    for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+        struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
+
+        if (entry->type == ULTRA_MEMORY_TYPE_MODULE) {
+            uintptr_t aligned_address = ALIGN_UP(entry->physical_address, PAGE_SIZE);
+            uintptr_t end_address = entry->physical_address + entry->size;
+            uintptr_t num_pages = (end_address - aligned_address) / PAGE_SIZE;
+
+            for (size_t j = 0; j < num_pages; j++) {
+                uintptr_t page_index = (aligned_address / PAGE_SIZE) + j;
+                clear_bit(page_index);
+            }
+        }
+    }
+}

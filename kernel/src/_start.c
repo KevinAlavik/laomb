@@ -25,7 +25,6 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 [[noreturn]] void main() {
     g_Vfs = vfs_initialize();
 
-
     for (;;) { }
 }
 
@@ -35,7 +34,7 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
     higher_half_base = (uintptr_t)(((struct ultra_platform_info_attribute*)ctx->attributes)->higher_half_base);
 
     tss_init();
-    gdt_load();
+    gdt_load(); 
     idt_init();
     pmm_init(ctx);
 

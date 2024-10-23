@@ -8,6 +8,7 @@ typedef enum {
     VFS_SUCCESS = 0,
     VFS_NOT_FOUND,
     VFS_NOT_PERMITTED,
+    VFS_OVERFLOW
 } vfs_err_t;
 
 enum VFS_TYPE {

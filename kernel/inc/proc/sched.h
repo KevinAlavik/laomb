@@ -30,8 +30,8 @@ struct JCB {
     
     uint64_t priority;
     uint64_t base_priority;
-    
-    
+
+    // todo vfs stuff
     // todo IPC stuff
 
     struct JCB* next;

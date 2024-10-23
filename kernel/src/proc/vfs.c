@@ -250,6 +250,8 @@ vfs_err_t ramfs_read(struct vfs_node *node, uint32_t offset, uint32_t size, uint
     struct vfs_ramfs_node *ramfs_node = (struct vfs_ramfs_node *)node;
     if (node->type != VFS_RAMFS_FILE) return VFS_NOT_PERMITTED;
 
+    if (offset + size > ramfs_node->base.size) return VFS_OVERFLOW;
+
     if (!has_permission(node, VFS_READ)) return VFS_NOT_PERMITTED;
 
     memcpy(buffer, ramfs_node->data + offset, size);
@@ -261,6 +263,8 @@ vfs_err_t ramfs_write(struct vfs_node *node, uint32_t offset, uint32_t size, con
     if (node->type != VFS_RAMFS_FILE) return VFS_NOT_PERMITTED;
 
     if (!has_permission(node, VFS_WRITE)) return VFS_NOT_PERMITTED;
+
+    if (offset + size > ramfs_node->base.size) return VFS_OVERFLOW;
 
     if (ramfs_node->data == nullptr) {
         ramfs_node->data = (uint8_t *)kmalloc(size);

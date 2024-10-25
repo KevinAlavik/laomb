@@ -23,29 +23,8 @@ struct ultra_module_info_attribute* initrd_module = NULL;
 #include <proc/sched.h>
 #include <proc/vfs.h>
 
-#include <driver/initrd.h>
-
-void vfs_print_contents(struct vfs_node* node, int depth) {
-    if (!node) return;
-    for (int i = 0; i < depth; i++) {
-        kprintf("  ");
-    }
-    kprintf("%s\n", node->name);
-    if (node->type == VFS_RAMFS_FOLDER) {
-        struct vfs_node* child = node->children;
-        while (child) {
-            vfs_print_contents(child, depth + 1);
-            child = child->next;
-        }
-    }
-}
-
 [[noreturn]] void main() {
     g_Vfs = vfs_initialize();
-    struct vfs_node* ramfs = vfs_create_node("/ramfs", VFS_RAMFS_FOLDER, g_Vfs->root);
-
-    uintptr_t initrd_base = initrd_module->address + higher_half_base;
-    initrd_load(ramfs, (const uint8_t*)initrd_base, initrd_module->size);
 
     for (;;) { }
 }

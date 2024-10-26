@@ -136,3 +136,57 @@ uint64_t get_rtc_timestamp() {
     timestamp |= (uint64_t)get_seconds();
     return timestamp;
 }
+
+void insb(uint16_t port, void *buffer, size_t count) {
+    __asm__ volatile (
+        "rep insb" 
+        : "=D" (buffer), "=c" (count)
+        : "d" (port), "0" (buffer), "1" (count)
+        : "memory"
+    );
+}
+
+void insw(uint16_t port, void *buffer, size_t count) {
+    __asm__ volatile (
+        "rep insw" 
+        : "=D" (buffer), "=c" (count)
+        : "d" (port), "0" (buffer), "1" (count)
+        : "memory"
+    );
+}
+
+void insl(uint16_t port, void *buffer, size_t count) {
+    __asm__ volatile (
+        "rep insl" 
+        : "=D" (buffer), "=c" (count)
+        : "d" (port), "0" (buffer), "1" (count)
+        : "memory"
+    );
+}
+
+void outsb(uint16_t port, const void *buffer, size_t count) {
+    __asm__ volatile (
+        "rep outsb" 
+        : "=S" (buffer), "=c" (count)
+        : "d" (port), "0" (buffer), "1" (count)
+        : "memory"
+    );
+}
+
+void outsw(uint16_t port, const void *buffer, size_t count) {
+    __asm__ volatile (
+        "rep outsw" 
+        : "=S" (buffer), "=c" (count)
+        : "d" (port), "0" (buffer), "1" (count)
+        : "memory"
+    );
+}
+
+void outsl(uint16_t port, const void *buffer, size_t count) {
+    __asm__ volatile (
+        "rep outsl" 
+        : "=S" (buffer), "=c" (count)
+        : "d" (port), "0" (buffer), "1" (count)
+        : "memory"
+    );
+}

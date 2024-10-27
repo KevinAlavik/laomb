@@ -22,6 +22,7 @@ struct ultra_module_info_attribute* initrd_module = NULL;
 
 #include <proc/sched.h>
 #include <proc/vfs.h>
+#include <time.h>
 
 [[noreturn]] void main() {
     g_Vfs = vfs_initialize();

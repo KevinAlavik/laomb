@@ -108,6 +108,7 @@
         "mutex.h": "c",
         "sched.h": "c",
         "initrd.h": "c",
-        "stdarg.h": "c"
+        "stdarg.h": "c",
+        "devfs.h": "c"
     }
 }

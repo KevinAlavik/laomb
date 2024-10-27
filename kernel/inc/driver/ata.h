@@ -19,4 +19,4 @@ void init_ata();
 
 uint8_t ide_identify(uint8_t bus, uint8_t drive);
 uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t index);
-void ata_read(uint8_t *buf, uint32_t lba, uint32_t numsects, uint8_t index);
+bool ata_read(uint8_t *buf, uint32_t lba, uint32_t numsects, uint8_t index);

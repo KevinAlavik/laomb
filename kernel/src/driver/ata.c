@@ -8,6 +8,7 @@
 #include <sys/pic.h>
 #include <sys/idt.h>
 #include <proc/mutex.h>
+#include <proc/devfs.h>
 
 struct ata_device_list ata_device_list;
 uint8_t* ide_buffer = nullptr;
@@ -71,19 +72,19 @@ void init_ata()
 
     if (ide_identify(ATA_PRIMARY, ATA_MASTER)) {
         ata_device_list.primary_master = true;
-        // TODO Create a devfs entry for this device.
+        devfs_create_device(VFS_DEVFS_DEVICE_ATA, ATA_PRIMARY << 1 | ATA_MASTER);
     }
     if (ide_identify(ATA_PRIMARY, ATA_SLAVE)) {
         ata_device_list.primary_slave = true;
-        // TODO Create a devfs entry for this device.
+        devfs_create_device(VFS_DEVFS_DEVICE_ATA, ATA_PRIMARY << 1 | ATA_SLAVE);
     }
     if (ide_identify(ATA_SECONDARY, ATA_MASTER)) {
         ata_device_list.secondary_master = true;
-        // TODO Create a devfs entry for this device.
+        devfs_create_device(VFS_DEVFS_DEVICE_ATA, ATA_SECONDARY << 1 | ATA_MASTER);
     }
     if (ide_identify(ATA_SECONDARY, ATA_SLAVE)) {
         ata_device_list.secondary_slave = true;
-        // TODO Create a devfs entry for this device.
+        devfs_create_device(VFS_DEVFS_DEVICE_ATA, ATA_SECONDARY << 1 | ATA_SLAVE);
     }
 }
 
@@ -135,12 +136,10 @@ read:
     return status;
 }
 
-// TODO instead of index, use a devfs node
 struct Mutex ata_read_mutex;
-uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t index)
+uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t drive)
 {
     mutex_lock(&ata_read_mutex);
-    uint8_t drive = index; // todo get this from devfs
     uint16_t io = 0;
 
     switch(drive)
@@ -192,11 +191,14 @@ uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t index)
     return 1;
 }
 
-void ata_read(uint8_t *buf, uint32_t lba, uint32_t numsects, uint8_t index)
+bool ata_read(uint8_t *buf, uint32_t lba, uint32_t numsects, uint8_t index)
 {
     for (uint32_t i = 0; i < numsects; i++)
 	{
-		ata_read_one(buf, lba + i, index);
+        if (ata_read_one(buf, lba + i, index) == 0) {
+            return false;
+        }
 		buf += 512;
 	}
+    return true;
 }

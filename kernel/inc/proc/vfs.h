@@ -8,12 +8,15 @@ typedef enum {
     VFS_SUCCESS = 0,
     VFS_NOT_FOUND,
     VFS_NOT_PERMITTED,
-    VFS_OVERFLOW
+    VFS_OVERFLOW,
+    VFS_MEMORY_ERROR,
+    VFS_IO_ERROR,
 } vfs_err_t;
 
 enum VFS_TYPE {
     VFS_RAMFS_FOLDER,
     VFS_RAMFS_FILE,
+    VFS_DEVFS_DEVICE,
 };
 
 enum VFS_PERMISSIONS {
@@ -67,5 +70,6 @@ int vfs_read(struct vfs_node *file, uint32_t offset, uint32_t size, uint8_t *buf
 int vfs_write(struct vfs_node *file, uint32_t offset, uint32_t size, const uint8_t *buffer);
 struct vfs_node *vfs_traverse_path(struct vfs_tree *vfs, const char *path);
 
-vfs_err_t vfs_mount(const char *target_path, struct vfs_node *filesystem_root);
+vfs_err_t vfs_mount(const char *target_path, struct vfs_tree *filesystem);
 vfs_err_t vfs_unmount(const char *target_path);
+bool has_permission(struct vfs_node *node, enum VFS_PERMISSIONS required);

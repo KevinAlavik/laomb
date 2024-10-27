@@ -35,10 +35,13 @@ vfs_err_t ramfs_chown(struct vfs_node *node, const char*);
 struct vfs_mount *g_mounts = nullptr;
 struct vfs_tree *g_Vfs;
 
-vfs_err_t vfs_mount(const char *target_path, struct vfs_node *filesystem_root) {
-    if (!g_Vfs || !target_path || !filesystem_root)
+vfs_err_t vfs_mount(const char *target_path, struct vfs_tree *filesystem) {
+    if (!g_Vfs || !target_path || !filesystem || !filesystem->root)
         return VFS_NOT_FOUND;
     
+    kfree(g_Vfs->root->name);
+    filesystem->root->name = strdup(target_path);
+
     struct vfs_node *mount_point = vfs_traverse_path(g_Vfs, target_path);
     if (!mount_point) return VFS_NOT_FOUND;
 
@@ -46,17 +49,17 @@ vfs_err_t vfs_mount(const char *target_path, struct vfs_node *filesystem_root) {
 
     struct vfs_mount *new_mount = (struct vfs_mount *)kmalloc(sizeof(struct vfs_mount));
     new_mount->mount_point = mount_point;
-    new_mount->mounted_root = filesystem_root;
+    new_mount->mounted_root = filesystem->root;
     new_mount->next = g_mounts;
     g_mounts = new_mount;
 
-    filesystem_root->parent = mount_point;
+    filesystem->root->parent = mount_point;
     if (!mount_point->children) {
-        mount_point->children = filesystem_root;
+        mount_point->children = filesystem->root;
     } else {
         struct vfs_node *child = mount_point->children;
         while (child->next) child = child->next;
-        child->next = filesystem_root;
+        child->next = filesystem->root;
     }
 
     return VFS_SUCCESS;
@@ -132,6 +135,9 @@ struct vfs_node *vfs_create_node(const char *name, enum VFS_TYPE type, struct vf
         struct vfs_ramfs_node *ramfs_node = (struct vfs_ramfs_node *)kmalloc(sizeof(struct vfs_ramfs_node));
         node = &ramfs_node->base;
         ramfs_node->data = nullptr;
+    } else if (type == VFS_DEVFS_DEVICE) {
+        kprintf("Creating devfs devices is not allowed, please use devfs interface\n");
+        return nullptr;
     } else {
         return nullptr;
     }
@@ -206,11 +212,13 @@ struct vfs_node *vfs_search_node(struct vfs_node *parent, const char *name) {
 }
 
 int vfs_read(struct vfs_node *file, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    if (!file) return VFS_NOT_FOUND;
     if (file->read) return file->read(file, offset, size, buffer);
     return VFS_NOT_PERMITTED;
 }
 
 int vfs_write(struct vfs_node *file, uint32_t offset, uint32_t size, const uint8_t *buffer) {
+    if (!file) return VFS_NOT_FOUND;
     if (file->write) return file->write(file, offset, size, buffer);
     return VFS_NOT_PERMITTED;
 }

@@ -255,3 +255,15 @@ uint8_t ata_write_one(uint8_t *buf, uint32_t lba, uint8_t index)
     mutex_unlock(&ata_mutex);
     return 1;
 }
+
+bool ata_write(uint8_t *buf, uint32_t lba, uint32_t numsects, uint8_t index)
+{
+    for (uint32_t i = 0; i < numsects; i++)
+    {
+        if (ata_write_one(buf, lba + i, index) == 0) {
+            return false;
+        }
+        buf += 512;
+    }
+    return true;
+}

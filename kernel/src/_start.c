@@ -24,6 +24,7 @@ struct ultra_module_info_attribute* initrd_module = NULL;
 #include <proc/vfs.h>
 #include <proc/devfs.h>
 #include <driver/ata.h>
+#include <driver/mbr.h>
 
 [[noreturn]] void main() {
     g_Vfs = vfs_initialize();
@@ -33,6 +34,7 @@ struct ultra_module_info_attribute* initrd_module = NULL;
     vfs_mount("dev", devfs);
     
     ata_init();
+    mbr_init(kernel_info_attrb);
 
     for (;;) { }
 }

@@ -2,35 +2,50 @@
 #include <proc/devfs.h>
 #include <driver/ata.h>
 #include <proc/sched.h>
+#include <driver/mbr.h>
 #include <kheap.h>
 #include <io.h>
 #include <string.h>
 #include <kprintf>
 
-vfs_err_t devfs_read(struct vfs_node *node, uint32_t offset, uint32_t size, uint8_t *buffer) 
+vfs_err_t devfs_read(struct vfs_node *node, uint32_t offset, uint32_t size, uint8_t *buffer)
 {
     struct vfs_devfs_node *devfs_node = (struct vfs_devfs_node *)node;
     if (!has_permission(node, VFS_READ)) return VFS_NOT_PERMITTED;
 
+    uint32_t start_sector;
+    uint32_t offset_within_sector;
+    uint32_t num_sectors;
+    uint32_t total_bytes_to_read;
+
     if (devfs_node->type == VFS_DEVFS_DEVICE_ATA) {
-        uint32_t start_sector = offset / 512;
-        uint32_t offset_within_sector = offset % 512;
+        start_sector = offset / 512;
+        offset_within_sector = offset % 512;
 
-        uint32_t total_bytes_to_read = offset_within_sector + size;
-        uint32_t num_sectors = (total_bytes_to_read + 511) / 512;
+        total_bytes_to_read = offset_within_sector + size;
+        num_sectors = (total_bytes_to_read + 511) / 512;
+    }
+    else if (devfs_node->type == VFS_DEVFS_DEVICE_PARTITION) {
+        struct partition *part = &partitions[devfs_node->drive & 0x03];
+        start_sector = part->partition_offset + (offset / 512);
+        offset_within_sector = offset % 512;
 
-        uint8_t *sector_buffer = kmalloc(num_sectors * 512);
-        if (!sector_buffer) return VFS_MEMORY_ERROR;
-
-        if (ata_read(sector_buffer, start_sector, num_sectors, devfs_node->drive) == false) {
-            kfree(sector_buffer);
-            return VFS_IO_ERROR;
-        }
-        memcpy(buffer, sector_buffer + offset_within_sector, size);
-        kfree(sector_buffer);
-    } else {
+        total_bytes_to_read = offset_within_sector + size;
+        num_sectors = (total_bytes_to_read + 511) / 512;
+    }
+    else {
         return VFS_NOT_PERMITTED;
     }
+
+    uint8_t *sector_buffer = kmalloc(num_sectors * 512);
+    if (!sector_buffer) return VFS_MEMORY_ERROR;
+
+    if (ata_read(sector_buffer, start_sector, num_sectors, devfs_node->drive) == false) {
+        kfree(sector_buffer);
+        return VFS_IO_ERROR;
+    }
+    memcpy(buffer, sector_buffer + offset_within_sector, size);
+    kfree(sector_buffer);
 
     return VFS_SUCCESS;
 }
@@ -40,12 +55,21 @@ vfs_err_t devfs_write(struct vfs_node *node, uint32_t offset, uint32_t size, con
     struct vfs_devfs_node *devfs_node = (struct vfs_devfs_node *)node;
     if (!has_permission(node, VFS_WRITE)) return VFS_NOT_PERMITTED;
 
-    if (devfs_node->type != VFS_DEVFS_DEVICE_ATA) {
+    uint32_t start_sector;
+    uint32_t offset_within_sector;
+
+    if (devfs_node->type == VFS_DEVFS_DEVICE_ATA) {
+        start_sector = offset / 512;
+        offset_within_sector = offset % 512;
+    }
+    else if (devfs_node->type == VFS_DEVFS_DEVICE_PARTITION) {
+        struct partition *part = &partitions[devfs_node->drive & 0x03];
+        start_sector = part->partition_offset + (offset / 512);
+        offset_within_sector = offset % 512;
+    }
+    else {
         return VFS_NOT_PERMITTED;
     }
-
-    uint32_t start_sector = offset / 512;
-    uint32_t offset_within_sector = offset % 512;
 
     uint8_t *sector_buffer = kmalloc(512);
     if (!sector_buffer) return VFS_MEMORY_ERROR;
@@ -179,7 +203,14 @@ vfs_err_t devfs_create_device(enum VFS_DEVFS_DEVICE_TYPE type, uint8_t drive)
                 node->base.name = strdup("81:1");
                 break;
         }
-    } // TODO FDC 
+    } else if (type == VFS_DEVFS_DEVICE_PARTITION) {
+        uint8_t bus = (drive >> 3) & 0x01;
+        uint8_t device = (drive >> 2) & 0x01;
+        uint8_t partition = drive & 0x03;
+        char disk_name[8];
+        ksnprintf(disk_name, sizeof(disk_name), "%d:%d:%d", 80 + bus, device, partition);
+        node->base.name = strdup(disk_name);
+    }
     else {
         node->base.name = "unknown";
     }

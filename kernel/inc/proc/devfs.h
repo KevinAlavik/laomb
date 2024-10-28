@@ -4,6 +4,7 @@
 
 enum VFS_DEVFS_DEVICE_TYPE {
     VFS_DEVFS_DEVICE_ATA,
+    VFS_DEVFS_DEVICE_PARTITION,
 };
 
 struct vfs_devfs_node {

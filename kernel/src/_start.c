@@ -25,6 +25,7 @@ struct ultra_module_info_attribute* initrd_module = NULL;
 #include <proc/devfs.h>
 #include <driver/ata.h>
 #include <driver/mbr.h>
+#include <driver/fat32.h>
 
 [[noreturn]] void main() {
     g_Vfs = vfs_initialize();
@@ -35,6 +36,7 @@ struct ultra_module_info_attribute* initrd_module = NULL;
     
     ata_init();
     mbr_init(kernel_info_attrb);
+    fat32_init("/dev/80:0:0");
 
     for (;;) { }
 }

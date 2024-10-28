@@ -37,9 +37,67 @@ vfs_err_t devfs_read(struct vfs_node *node, uint32_t offset, uint32_t size, uint
 
 vfs_err_t devfs_write(struct vfs_node *node, uint32_t offset, uint32_t size, const uint8_t *buffer)
 {
-    (void)node; (void)offset; (void)size; (void)buffer;
-    return VFS_NOT_PERMITTED; //TODO: Will create
+    struct vfs_devfs_node *devfs_node = (struct vfs_devfs_node *)node;
+    if (!has_permission(node, VFS_WRITE)) return VFS_NOT_PERMITTED;
+
+    if (devfs_node->type != VFS_DEVFS_DEVICE_ATA) {
+        return VFS_NOT_PERMITTED;
+    }
+
+    uint32_t start_sector = offset / 512;
+    uint32_t offset_within_sector = offset % 512;
+
+    uint8_t *sector_buffer = kmalloc(512);
+    if (!sector_buffer) return VFS_MEMORY_ERROR;
+
+    if (offset_within_sector != 0) {
+        if (!ata_read_one(sector_buffer, start_sector, devfs_node->drive)) {
+            kfree(sector_buffer);
+            return VFS_IO_ERROR;
+        }
+        uint32_t bytes_to_copy = (512 - offset_within_sector < size) ? 512 - offset_within_sector : size;
+        memcpy(sector_buffer + offset_within_sector, buffer, bytes_to_copy);
+
+        if (!ata_write_one(sector_buffer, start_sector, devfs_node->drive)) {
+            kfree(sector_buffer);
+            return VFS_IO_ERROR;
+        }
+
+        buffer += bytes_to_copy;
+        size -= bytes_to_copy;
+        start_sector++;
+    }
+
+    while (size >= 512) {
+        memcpy(sector_buffer, buffer, 512);
+
+        if (!ata_write_one(sector_buffer, start_sector, devfs_node->drive)) {
+            kfree(sector_buffer);
+            return VFS_IO_ERROR;
+        }
+
+        buffer += 512;
+        size -= 512;
+        start_sector++;
+    }
+
+    if (size > 0) {
+        if (!ata_read_one(sector_buffer, start_sector, devfs_node->drive)) {
+            kfree(sector_buffer);
+            return VFS_IO_ERROR;
+        }
+        memcpy(sector_buffer, buffer, size);
+
+        if (!ata_write_one(sector_buffer, start_sector, devfs_node->drive)) {
+            kfree(sector_buffer);
+            return VFS_IO_ERROR;
+        }
+    }
+
+    kfree(sector_buffer);
+    return VFS_SUCCESS;
 }
+
 vfs_err_t devfs_create(struct vfs_node *, const char *, enum VFS_TYPE , struct vfs_node **)
 {
     return VFS_NOT_PERMITTED; // can not create new nodes

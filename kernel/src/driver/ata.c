@@ -64,7 +64,7 @@ void ide_select_drive(uint8_t bus, uint8_t i)
     }
 }
 
-void init_ata()
+void ata_init()
 {
     ide_buffer = (uint8_t*)kmalloc(512);
     idt_register_handler(0x20 + 14, ide_primary_irq);
@@ -136,10 +136,10 @@ read:
     return status;
 }
 
-struct Mutex ata_read_mutex;
+struct Mutex ata_mutex;
 uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t drive)
 {
-    mutex_lock(&ata_read_mutex);
+    mutex_lock(&ata_mutex);
     uint16_t io = 0;
 
     switch(drive)
@@ -162,7 +162,7 @@ uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t drive)
 			break;
 		default:
 			kprintf("ATA: unknown drive!\n");
-            mutex_unlock(&ata_read_mutex);
+            mutex_unlock(&ata_mutex);
 			return 0;
 	}
 
@@ -177,7 +177,7 @@ uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t drive)
     outb(io + ATA_PORT_COMMAND, 0x20);
 
     if (!ide_poll(io)) {
-        mutex_unlock(&ata_read_mutex);
+        mutex_unlock(&ata_mutex);
         return 0;
     }
 
@@ -187,7 +187,7 @@ uint8_t ata_read_one(uint8_t *buf, uint32_t lba, uint8_t drive)
     }
     ide_400ns(io);
 
-    mutex_unlock(&ata_read_mutex);
+    mutex_unlock(&ata_mutex);
     return 1;
 }
 
@@ -201,4 +201,57 @@ bool ata_read(uint8_t *buf, uint32_t lba, uint32_t numsects, uint8_t index)
 		buf += 512;
 	}
     return true;
+}
+
+uint8_t ata_write_one(uint8_t *buf, uint32_t lba, uint8_t index)
+{
+    mutex_lock(&ata_mutex);
+    uint16_t io = 0;
+
+    switch(index)
+    {
+        case (ATA_PRIMARY << 1 | ATA_MASTER):
+            io = 0x1F0;
+            index = ATA_MASTER;
+            break;
+        case (ATA_PRIMARY << 1 | ATA_SLAVE):
+            io = 0x1F0;
+            index = ATA_SLAVE;
+            break;
+        case (ATA_SECONDARY << 1 | ATA_MASTER):
+            io = 0x170;
+            index = ATA_MASTER;
+            break;
+        case (ATA_SECONDARY << 1 | ATA_SLAVE):
+            io = 0x170;
+            index = ATA_SLAVE;
+            break;
+        default:
+            kprintf("ATA: unknown drive!\n");
+            mutex_unlock(&ata_mutex);
+            return 0;
+    }
+
+    uint8_t cmd = (index == ATA_MASTER ? 0xE0 : 0xF0);
+
+    outb(io + ATA_PORT_HDDEVSEL, (cmd | (uint8_t)((lba >> 24 & 0x0F))));
+    outb(io + 0x1, 0x0);
+    outb(io + ATA_PORT_SECTOR_COUNT0, 0x1); // we are writing one sector
+    outb(io + ATA_PORT_LBA0, (uint8_t)lba & 0xFF);
+    outb(io + ATA_PORT_LBA1, (uint8_t)((lba) >> 8));
+    outb(io + ATA_PORT_LBA2, (uint8_t)((lba) >> 16));
+    outb(io + ATA_PORT_COMMAND, 0x30);
+
+    if (!ide_poll(io)) {
+        mutex_unlock(&ata_mutex);
+        return 0;
+    }
+
+    for (int i = 0; i < 256; i++) {
+        outw(io + ATA_PORT_DATA, *(uint16_t *)(buf + i * 2));
+    }
+    ide_400ns(io);
+
+    mutex_unlock(&ata_mutex);
+    return 1;
 }

@@ -32,9 +32,7 @@ struct ultra_module_info_attribute* initrd_module = NULL;
     vfs_create_node("dev", VFS_RAMFS_FOLDER, g_Vfs->root);
     vfs_mount("dev", devfs);
     
-    init_ata();
-
-    
+    ata_init();
 
     for (;;) { }
 }

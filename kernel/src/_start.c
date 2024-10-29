@@ -24,8 +24,7 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
     cli();
     higher_half_base = (uintptr_t)(((struct ultra_platform_info_attribute*)ctx->attributes)->higher_half_base);
 
-    tss_init();
-    gdt_load();
+    gdt_init();
     idt_init();
     pmm_init(ctx);
 

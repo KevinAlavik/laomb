@@ -4,12 +4,12 @@
 #define PAGE_RW 0x2
 #define PAGE_USER 0x4
 
-#include <sys/pmm.h>
 
-#define PAGE_MASK (~(PAGE_SIZE - 1))
+#define PAGE_MASK (~(0x1000 - 1))
 #define ROUND_DOWN_TO_PAGE(addr) ((addr) & PAGE_MASK)
-#define ROUND_UP_TO_PAGE(addr)   (((addr) + PAGE_SIZE - 1) & PAGE_MASK)
+#define ROUND_UP_TO_PAGE(addr)   (((addr) + 0x1000 - 1) & PAGE_MASK)
 
+#include <sys/pmm.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>

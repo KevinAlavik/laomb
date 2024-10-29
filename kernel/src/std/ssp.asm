@@ -22,7 +22,7 @@ puts:
     ret
 
 global __stack_chk_guard
-__stack_chk_guard: dw STACK_CHK_GUARD
+__stack_chk_guard: dd STACK_CHK_GUARD
 ssd_string: db "Stack smashing detected!", 0
 
 global __stack_chk_fail

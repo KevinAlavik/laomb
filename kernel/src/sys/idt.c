@@ -83,7 +83,6 @@ void idt_default_handler(registers_t* regs)
         kprintf("SS =%04x ESP_USER=%08x\n", regs->ss, regs->user_esp);
 
     kprintf("CR2=%08x CR3=%08x\n", regs->cr2, regs->cr3);
-    kprintf("DR0=%08x DR1=%08x DR2=%08x DR3=%08x\n", regs->dr0, regs->dr1, regs->dr2, regs->dr3);
     if (regs->interrupt < 32) {
         kprintf("Unhandled exception: %s\n", g_Exceptions[regs->interrupt]);
     }

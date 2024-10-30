@@ -19,6 +19,20 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 #include <sys/pmm.h>
 #include <sys/mmu.h>
 
+#include <proc/sched.h>
+
+[[noreturn]] void main() {
+
+    // sched_create_thread(sched_get_current_job());
+    // if (sched_get_current_thread() == 0) {
+    //     kprintf("Mommy thread: %d\n", sched_get_current_thread());
+    // } else {
+    //     kprintf("Child thread: %d\n", sched_get_current_thread());
+    // }
+
+    for(;;) ;
+}
+
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
 {
     cli();
@@ -56,6 +70,11 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
     mmu_switch_pd(&kernel_page_directory);
     pmm_reclaim_bootloader_memory();
+
+    sched_create_job((uintptr_t)main, (uint8_t*)__text_start, (uintptr_t)(__text_start - __text_end), (uint8_t*)__data_start, (uintptr_t)(__data_end - __data_start)
+                    , 0, 0, 0, nullptr);
+
+    sched_init();
 
     for(;;) ;
 }

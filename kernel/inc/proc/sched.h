@@ -37,10 +37,9 @@ struct JCB {
     uint8_t* stack_base;
     size_t stack_len;
     
-    // todo posix and unix stuff
     task_state_t state;
-    int priority;                       // Unix priority value (-20 to 19)
-    uint64_t time_slice;                // Time slice allocated to this task in ms
+    int priority;                       // Unix priority value (-20 to 19) to which will be reset when ran
+    int aged_priority;                  // Unix priority value (-20 to 19) which will change
     uint64_t user_time;                 // CPU time used in user mode (in ticks)
     uint64_t system_time;               // CPU time used in system mode (in ticks)
 
@@ -61,25 +60,17 @@ struct JCB {
     struct JCB* first_child;
     struct JCB* next_sibling;
     struct JCB* parent;
+
+    struct JCB* next, *prev;
 };
-
-typedef enum {
-    SCHED_RR,               // Round Robin scheduling
-    SCHED_PRIORITY,         // Priority-based scheduling
-    SCHED_REALTIME          // Real-time scheduling policy
-} sched_policy_t;
-
-#define SCHED_TIME_SLICE_DEFAULT 10
-
-extern sched_policy_t global_sched_policy;
 
 /**
  * Initialize the scheduler.
  * Should be called once at the start of the system.
  * 
- * @param job0 The first job that will be created in the scheduler, pid 0, parent of all
+ * @warning Job must be created before calling this function.
  */
-void sched_init(struct JCB* job0);
+void sched_init();
 
 /**
  * Create a new job.
@@ -94,7 +85,7 @@ void sched_init(struct JCB* job0);
  * 
  * @return Pointer to the created JCB, or NULL on failure.
  */
-struct JCB* sched_create_job(uint8_t* code_base, size_t code_len, uint8_t* data_base, size_t data_len, uint32_t uid, uint32_t gid, int priority);
+struct JCB* sched_create_job(uintptr_t callback, uint8_t* code_base, size_t code_len, uint8_t* data_base, size_t data_len, uint32_t uid, uint32_t gid, int priority, struct JCB* parent);
 
 /**
  * Terminate a job and remove it from the scheduler.
@@ -120,13 +111,6 @@ struct JCB* sched_create_thread(struct JCB* job);
 void sched_terminate_thread(struct JCB* thread);
 
 /**
- * Set the scheduling policy for a job.
- * 
- * @param policy Scheduling policy (e.g., SCHED_RR, SCHED_PRIORITY).
- */
-void sched_set_policy(sched_policy_t policy);
-
-/**
  * Yield the CPU to the next eligible thread.
  */
 void sched_yield();
@@ -135,7 +119,7 @@ void sched_yield();
  * Perform a context switch to the next job/thread.
  * -> called by the timer interrupt or scheduler loop.
  */
-void sched_context_switch(registers_t* r);
+void sched_context_switch(registers_t* r, struct JCB* next_job);
 
 /**
  * Set the priority for a job.
@@ -185,12 +169,3 @@ task_state_t sched_get_job_state(struct JCB* job);
  * This function will update time slices and trigger a context switch if necessary.
  */
 void sched_timer_tick(registers_t* r);
-
-/**
- * Set the time slice for a job (in ms).
- * Used for Round-Robin scheduling.
- * 
- * @param job Pointer to the JCB.
- * @param time_slice Time slice in milliseconds.
- */
-void sched_set_time_slice(struct JCB* job, uint64_t time_slice);

@@ -104,6 +104,7 @@
         "complex": "c",
         "set": "c",
         "unordered_set": "c",
-        "why are u using the goofy interrupt call": "c"
+        "why are u using the goofy interrupt call": "c",
+        "sched.h": "c"
     }
 }

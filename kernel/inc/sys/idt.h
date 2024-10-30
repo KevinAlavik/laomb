@@ -22,7 +22,6 @@ void idt_init();
 
 typedef struct  
 {
-    uint32_t dr3, dr2, dr1, dr0;
     uint32_t cr3, cr2;
     uint32_t gs, fs, es, ds;
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;

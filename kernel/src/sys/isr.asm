@@ -29,15 +29,6 @@ isr_common:
     push eax
     mov eax, cr3
     push eax
-
-    mov eax, dr0
-    push eax
-    mov eax, dr1
-    push eax
-    mov eax, dr2
-    push eax
-    mov eax, dr3
-    push eax
     
     mov ax, 0x10
     mov ds, ax
@@ -50,6 +41,8 @@ isr_common:
 
     mov eax, idt_default_handler
     call eax
+
+    add esp, 8
 
     pop eax
     pop gs

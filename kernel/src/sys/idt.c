@@ -68,10 +68,12 @@ void idt_init()
 
 void idt_default_handler(registers_t* regs)
 {
-    kprintf("Unhandled interrupt: %d\n", regs->interrupt);
-    if (handlers[regs->interrupt] != nullptr)
+    if (handlers[regs->interrupt] != nullptr) {
         handlers[regs->interrupt](regs);
+        return;
+    }
 
+    kprintf("Unhandled interrupt: %d\n", regs->interrupt);
     kprintf("EAX=%08x EBX=%08x ECX=%08x EDX=%08x\n", regs->eax, regs->ebx, regs->ecx, regs->edx);
     kprintf("ESI=%08x EDI=%08x EBP=%08x ESP=%08x\n", regs->esi, regs->edi, regs->ebp, regs->esp);
     kprintf("EIP=%08x EFL=%08x\n", regs->eip, regs->eflags);

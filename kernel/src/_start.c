@@ -23,13 +23,6 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
 [[noreturn]] void main() {
 
-    // sched_create_thread(sched_get_current_job());
-    // if (sched_get_current_thread() == 0) {
-    //     kprintf("Mommy thread: %d\n", sched_get_current_thread());
-    // } else {
-    //     kprintf("Child thread: %d\n", sched_get_current_thread());
-    // }
-
     for(;;) ;
 }
 

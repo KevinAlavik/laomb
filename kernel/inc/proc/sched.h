@@ -36,7 +36,8 @@ struct JCB {
     size_t data_segment_len;
     uint8_t* stack_base;
     size_t stack_len;
-    
+    uintptr_t kernel_stack_base;
+
     task_state_t state;
     int priority;                       // Unix priority value (-20 to 19) to which will be reset when ran
     int aged_priority;                  // Unix priority value (-20 to 19) which will change
@@ -53,9 +54,6 @@ struct JCB {
 
     // TODO: once VFS
     // int* file_descriptors;              // Array of file descriptors
-
-    struct JCB* threads;                // Circular linked list, where last thread points back to the first / master thread
-    uint32_t thread_index;
 
     struct JCB* first_child;
     struct JCB* next_sibling;
@@ -93,22 +91,6 @@ struct JCB* sched_create_job(uintptr_t callback, uint8_t* code_base, size_t code
  * @param job Pointer to the JCB to terminate.
  */
 void sched_terminate_job(struct JCB* job);
-
-/**
- * Add a new thread to an existing job.
- * 
- * @param job Pointer to the job to which a thread is added.
- * 
- * @return Pointer to the newly created thread JCB, or NULL on failure.
- */
-struct JCB* sched_create_thread(struct JCB* job);
-
-/**
- * Terminate a thread in a job.
- * 
- * @param thread Pointer to the thread JCB to terminate.
- */
-void sched_terminate_thread(struct JCB* thread);
 
 /**
  * Yield the CPU to the next eligible thread.
@@ -150,22 +132,9 @@ void sched_unblock_job(struct JCB* job);
 struct JCB* sched_get_current_job();
 
 /**
- * Get the current thread index
- * 
- * @return Pointer to the current thread JCB.
- */
-uint32_t sched_get_current_thread();
-
-/**
- * Get the state of a job.
- * 
- * @param job Pointer to the JCB.
- * @return The current state of the job (TASK_RUNNING, TASK_BLOCKED, etc.).
- */
-task_state_t sched_get_job_state(struct JCB* job);
-
-/**
  * Timer tick handler to be called by the system clock interrupt.
  * This function will update time slices and trigger a context switch if necessary.
  */
 void sched_timer_tick(registers_t* r);
+
+// TODO Update stack function

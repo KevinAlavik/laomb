@@ -87,22 +87,21 @@ struct JCB* sched_create_job(uintptr_t callback, uint8_t* code_base, size_t code
     new_job->code_segment_len = code_len;
     new_job->data_segment_base = data_base;
     new_job->data_segment_len = data_len;
-    new_job->stack_base = (uint8_t*)kmalloc(JOB_KERNEL_STACK_SIZE);
-    new_job->stack_len = JOB_KERNEL_STACK_SIZE;
+    new_job->stack_base = 0;
+    new_job->stack_len = 0;
+    new_job->kernel_stack_base = (uintptr_t)kmalloc(JOB_KERNEL_STACK_SIZE);
     new_job->state = TASK_READY;
     new_job->regs.eip = callback;
     new_job->regs.cs = 0x8;
     new_job->regs.ds = 0x10;
     new_job->regs.eflags = 0x202;
-    new_job->regs.esp = (uintptr_t)(new_job->stack_base) + JOB_KERNEL_STACK_SIZE;
+    new_job->regs.esp = (uintptr_t)(new_job->kernel_stack_base) + JOB_KERNEL_STACK_SIZE;
     new_job->fpu_enabled = false;
     new_job->ctx = kernel_page_directory;
 
     new_job->user_time = 0;
     new_job->system_time = 0;
 
-    new_job->threads = nullptr;
-    new_job->thread_index = 0;
     new_job->first_child = nullptr;
 
     spinlock_lock(&sched_lock);
@@ -150,16 +149,9 @@ void sched_terminate_job(struct JCB* job) {
             }
         }
     }
-    // kill all the threads
-    struct JCB* thread = job->threads;
-    while (thread) {
-        struct JCB* next = thread->next_sibling;
-        sched_terminate_thread(thread);
-        thread = next;
-    }
     spinlock_unlock(&sched_lock);
 
-    kfree(job->stack_base);
+    kfree((void*)job->kernel_stack_base);
     kfree(job);
 }
 
@@ -179,90 +171,6 @@ void sched_context_switch(registers_t* r, struct JCB* next_job) {
 
     return;
 }
-
-struct JCB* sched_create_thread(struct JCB* source) {
-    struct JCB* new_thread = (struct JCB*)kmalloc(sizeof(struct JCB));
-    if (!new_thread) return nullptr;
-    memcpy(new_thread, source, sizeof(struct JCB));
-
-    spinlock_lock(&sched_lock);
-    uint32_t highest_thread_index = 0;
-    if (source->threads != nullptr) {
-        struct JCB* current_thread = source->threads;
-
-        do {
-            if (current_thread->thread_index > highest_thread_index) {
-                highest_thread_index = current_thread->thread_index;
-            }
-            current_thread = current_thread->threads;
-        } while (current_thread != source->threads);
-    }
-
-    new_thread->stack_base = (uint8_t*)kmalloc(JOB_KERNEL_STACK_SIZE);
-    if (!new_thread->stack_base) {
-        kfree(new_thread);
-        return nullptr;
-    }
-    new_thread->stack_len = JOB_KERNEL_STACK_SIZE;
-
-    new_thread->regs.esp = (uintptr_t)(new_thread->stack_base + new_thread->stack_len);
-    new_thread->regs.eip = source->regs.eip;
-
-    if (source->threads == nullptr) {
-        source->threads = new_thread;
-        new_thread->threads = new_thread;
-    } else {
-        struct JCB* last_thread = source->threads;
-        while (last_thread->threads != source->threads) {
-            last_thread = last_thread->threads;
-        }
-
-        last_thread->threads = new_thread;
-        new_thread->threads = source->threads;
-    }
-
-    if (job_list) {
-        new_thread->next = job_list;
-        new_thread->prev = job_list->prev;
-        job_list->prev->next = new_thread;
-        job_list->prev = new_thread;
-    }
-
-    spinlock_unlock(&sched_lock);
-
-    return new_thread;
-}
-
-void sched_terminate_thread(struct JCB* thread) {
-    spinlock_lock(&sched_lock);
-
-    struct JCB* current = thread->parent->threads;
-
-    if (current == thread && current->threads == thread) {
-        thread->parent->threads = nullptr;
-    } else {
-        struct JCB* prev = nullptr;
-
-        do {
-            if (current == thread) {
-                if (prev) {
-                    prev->threads = thread->threads;
-                }
-                if (thread == thread->parent->threads) {
-                    thread->parent->threads = thread->threads;
-                }
-                break;
-            }
-            prev = current;
-            current = current->threads;
-        } while (current != thread->parent->threads);
-    }
-    spinlock_unlock(&sched_lock);
-
-    kfree(thread->stack_base);
-    kfree(thread);
-}
-
 
 void sched_timer_tick(registers_t* r) {
     if (__builtin_expect(!!(current_job), 1)) { // this is not gonna run ONCE
@@ -308,13 +216,6 @@ struct JCB* sched_get_current_job() {
     return current_job;
 }
 
-uint32_t sched_get_current_thread() {
-    if (current_job) {
-        return current_job->thread_index;
-    }
-    return 0;
-}
-
 void sched_block_current() {
     spinlock_lock(&sched_lock);
 
@@ -337,11 +238,4 @@ void sched_unblock_job(struct JCB* job) {
     }
 
     spinlock_unlock(&sched_lock);
-}
-
-task_state_t sched_get_job_state(struct JCB* job) {
-    if (job) {
-        return job->state;
-    }
-    return TASK_ZOMBIE;
 }

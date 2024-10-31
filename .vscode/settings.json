@@ -105,6 +105,10 @@
         "set": "c",
         "unordered_set": "c",
         "why are u using the goofy interrupt call": "c",
-        "sched.h": "c"
+        "sched.h": "c",
+        "errno.h": "c",
+        "features.h": "c",
+        "error_t.h": "c",
+        "stat.h": "c"
     }
 }

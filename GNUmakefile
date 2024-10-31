@@ -24,6 +24,29 @@ disk:
 
 	@mcopy -i $(BUILD_DIR)/image.hdd@@1M $(BUILD_DIR)/kernel.bin kernel/cfg/hyper.cfg $(BUILD_DIR)/initramfs.img ::/
 
+cdimage:
+	@echo "Creating ISO image..."
+	@mkdir -p $(BUILD_DIR)/iso_root/boot/hyper
+	@cp $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/iso_root/
+	@cp kernel/cfg/hyper.cfg $(BUILD_DIR)/iso_root/boot/hyper/
+	@cp $(BUILD_DIR)/initramfs.img $(BUILD_DIR)/iso_root/
+
+	@cp $(HYPER_DIR)/build/loader/hyper_iso_boot $(BUILD_DIR)/iso_root/
+
+	@xorriso -as mkisofs \
+		-o $(BUILD_DIR)/image.iso \
+		-b hyper_iso_boot \
+		-no-emul-boot \
+		-boot-load-size 4 \
+		-boot-info-table \
+		--protective-msdos-label $(BUILD_DIR)/iso_root
+
+	@$(HYPER_DIR)/installer/hyper_install $(BUILD_DIR)/image.iso
+
+	@echo "ISO image created at $(BUILD_DIR)/image.iso"
+
+
+
 hyper-bootloader:
 	@rm -rf $(HYPER_DIR)/build
 	@mkdir -p $(HYPER_DIR)/build
@@ -35,27 +58,21 @@ reinstall-hyper:
 	@git clone https://github.com/UltraOS/Hyper.git --depth=1 --recurse-submodules $(HYPER_DIR)
 	@make hyper-bootloader
 
-installer: hyper-bootloader release
-	@echo "Creating installer floppy image..."
-	@rm -f $(BUILD_DIR)/floppy.img
-	@dd if=/dev/zero of=$(BUILD_DIR)/floppy.img bs=512 count=2880
-	@mformat -i $(BUILD_DIR)/floppy.img -f 1440 ::
-	@mcopy -i $(BUILD_DIR)/floppy.img $(BUILD_DIR)/kernel.bin kernel/cfg/hyper.cfg $(HYPER_DIR)/installer/hyper_install.exe ::/
-	@echo "Installer floppy image created at $(BUILD_DIR)/floppy.img"
-
-installer-run: installer
-	@rm -f $(BUILD_DIR)/installer_test.img
-	@qemu-img create -f raw $(BUILD_DIR)/installer_test.img 1G
-	@parted $(BUILD_DIR)/installer_test.img mklabel msdos
-	@parted $(BUILD_DIR)/installer_test.img mkpart primary fat32 1MiB 100%
-	@mformat -i $(BUILD_DIR)/installer_test.img@@1M
-
-	qemu-system-i386 -fda Dos6.22.img -drive file=$(BUILD_DIR)/floppy.img,format=raw,if=floppy,index=1 \
-	                 -hda $(BUILD_DIR)/installer_test.img -boot b -m 32
-
 run:
 	@clear	
 	@qemu-system-i386 -drive format=raw,file=$(BUILD_DIR)/image.hdd,if=ide,index=0 \
+		-m 64M -cpu pentium \
+		-machine pc-i440fx-2.9,acpi=off \
+		-device cirrus-vga \
+		-debugcon stdio \
+		--no-reboot --no-shutdown \
+		-serial file:$(BUILD_DIR)/serial_output.txt \
+		-d int \
+		-D $(BUILD_DIR)/qemu_interrupt.log
+
+run-iso:
+	@clear	
+	@qemu-system-i386 -cdrom $(BUILD_DIR)/image.iso \
 		-m 64M -cpu pentium \
 		-machine pc-i440fx-2.9,acpi=off \
 		-device cirrus-vga \
@@ -93,4 +110,4 @@ reset:
 	@clear
 	@make
 
-.PHONY: all kernel disk ramfs run clean reset reinstall-hyper release installer installer-run
+.PHONY: all kernel disk ramfs run clean reset reinstall-hyper release cdimage

@@ -37,16 +37,6 @@ struct vfs_tree *g_Vfs = NULL;
 
 void main() {
     g_Vfs = vfs_initialize();
-    ata_init();
-    mbr_parse();
-    
-    char *folderPath = kmalloc(512);
-    sprintf_(folderPath, "/%lx:%lx", kernel_info_attrb->disk_index, kernel_info_attrb->partition_index);
-    if (create(folderPath, VFS_RAMFS_FOLDER) != VFS_SUCCESS) {
-        kprintf("Failed to create directory.\n");
-        return;
-    }
-    kfree(folderPath);
 
     fshell_callback();
     for(;;) { yield(); }
@@ -99,7 +89,7 @@ void main() {
     set_background_color(0x12345432);
     
     pmm_reclaim_bootloader_memory();
-    init_fshell();       
+    init_fshell();
 
     struct task callback_task = task_create((uintptr_t)main, 0, 0, 10000, kernel_page_directory);
     sched_init(&callback_task);

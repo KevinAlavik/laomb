@@ -59,7 +59,7 @@ struct JCB {
     struct JCB* next_sibling;
     struct JCB* parent;
 
-    struct JCB* next, *prev;
+    struct JCB* next, *prev;               // Double linked list
 };
 
 /**

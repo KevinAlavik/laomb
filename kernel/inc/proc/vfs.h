@@ -1,92 +1,158 @@
 #pragma once
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-enum vnode_type {
-    VNODE_FILE,
-    VNODE_DIR,
-    VNODE_BLOCK_DEVICE,
-    VNODE_CHAR_DEVICE,
-    VNODE_SYMLINK,
-    VNODE_SOCKET,
-    VNODE_BAD
+#define OK                      0
+#define INVALID_ARGS            1
+#define MOUNTPOINT_INVALID      2
+#define NO_ENTRY                3
+
+#define ROOT_FLAG               (1 << 0)
+
+enum NodeType {
+    NODE_NONE,
+    NODE_REG,
+    NODE_DIR,
+    NODE_BLK,
+    NODE_CHR,
+    NODE_LNK,
+    NODE_SOCK,
+    NODE_BAD
 };
 
-#define INITIAL_FD_COUNT 0x10
+typedef struct {
+    uint64_t id[2];
+} FsId;
 
-struct vfs_operations {
-    int (*mount)(struct vfs* vfs, const char* path, struct vnode* mountat);
-    int (*unmount)(struct vfs* vfs);
-    int (*groot)(struct vfs* vfs, struct vnode** root); // root will be filled with a pointer to the root node
-    int (*sync)(struct vfs* vfs);
-    int (*allocate_fd)(struct vfs* vfs, struct vnode* vnode, uint32_t flags, uint64_t* fd);
-    int (*close_fd)(struct vfs* vfs, uint64_t fd);
-    int (*get_vnode_fd)(struct vfs* vfs, uint64_t fd, struct vnode** vnode);
+struct FileId {
+    uint64_t len;
+    uint8_t data[1];
 };
 
-struct vfs {
-    uintptr_t vfs_data;                     // Filesystem dependant data
-    struct vfs_operations* vfs_op;          // Standartised functions to operate on the filesystem
-    struct vnode* mount;                    // Where the filesystem is mounted, nullptr for root vfs and non-mounted filesystems
-
-    uint16_t flags;                         // VFS flags
-    uint16_t block_size;                    // VFS block size, such as 512 for fdc and ata devices
-
-    struct vfs* next;
+struct IoOp {
+    uint8_t *buffer;
+    size_t remaining;
+    size_t offset;
+    bool is_write;
 };
 
-struct vnode_operations {
-    int (*open)(struct vnode* vnode, const char* name, uint32_t flags, struct vnode** out);
-    int (*close)(struct vnode* vnode);
-    int (*rw)(struct vnode* vnode, uint8_t* buffer, size_t len, uint32_t flags, bool write);
-    int (*access)(struct vnode* vnode, uint32_t mode);
-    int (*create)(struct vnode* vnode, const char* name, uint32_t mode, uint32_t flags);
-    int (*remove)(struct vnode* vnode, const char* name);
-    int (*rename)(struct vnode* vnode, const char* oldname, const char* newname);
-    int (*mkdir)(struct vnode* vnode, const char* name, uint32_t mode);
-    int (*rmdir)(struct vnode* vnode, const char* name);
-    int (*readdir)(struct vnode* vnode, const char** names, size_t* count);
-
-    int (*link)(struct vnode* vnode, const char* name, struct vnode* target);
-    int (*unlink)(struct vnode* vnode);
-    int (*symlink)(struct vnode* vnode, const char* name, uint32_t flags, struct vnode** out); // like open() but if used on a symlink gets what it points to.
-    int (*fsync)(struct vnode* vnode); // like sync() but for a specific vnode
-    
-    int (*ioctl)(struct vnode* vnode, uint32_t request, void* arg);
+struct FsStats {
+    uint64_t type;
+    uint64_t block_size;
+    uint64_t total_blocks;
+    uint64_t free_blocks;
+    uint64_t available_blocks;
+    uint64_t total_files;
+    uint64_t free_files;
+    FsId fsid;
+    uint64_t spare[7];
 };
 
-struct vnode {
-    enum vnode_type type;
-    struct vfs* vfs;
-
-    uint16_t slocks;                        // For flock()'s shared locks
-    uint16_t elocks;                        // For flock()'s exclusive locks
-    uint16_t refcount;
-
-    struct vfs* mount;                      // If there is a filesystem mounted over me, this is it.
-    struct vnode_operations* vnode_op;      // Standartised functions to operate on the vnode
+struct NodeAttr {
+    enum NodeType type;
+    uint16_t mode;
+    int16_t uid;
+    int16_t gid;
+    size_t fs_id;
+    size_t node_id;
+    int16_t link_count;
+    size_t size;
+    size_t device_id;
+    size_t blocks;
 };
 
-extern struct vfs* root_vfs;
+typedef struct FileHandle {
+    struct Fs *fs;      
+    struct Node *node;  
+} FileHandle;
 
-bool vfs_initroot();
+struct Fs {
+    struct Fs *next;             
+    struct FsOps *ops;
 
-bool vfs_mount(struct vfs* fs, const char* path, struct vnode* node);
-bool vfs_unmount(struct vnode* node);
+    size_t flags;
+    size_t block_size;
 
-int vfs_resolve_path(const char* path, struct vnode** out_vnode);
-int vfs_close_fd(struct vfs* vfs, uint64_t fd);
+    FileHandle mount_point;
+    char *name;                   
+    void *data;                   
 
-enum flock_type { // advisory locks :)
-    FLOCK_SHARED,
-    FLOCK_EXCLUSIVE,
-    FLOCK_ULOCK_EXCLUSIVE,
-    FLOCK_ULOCK_SHARED
+    struct PathEntry *root_cache;
+    FileHandle covered;
 };
 
-int vfs_flock(struct vnode* vnode, enum flock_type lock_type);
-int vfs_sync_all();
+struct FsOps {
+    int (*mount)(struct Fs *fs, void *specific_data);
+    int (*unmount)(struct Fs *fs);
+    int (*get_root)(struct Fs *fs, struct Node **result);
+    int (*get_stats)(struct Fs *fs, struct FsStats *result);
+    int (*sync)(struct Fs *fs);
+    int (*get_file_id)(struct Fs *fs, struct Node *file, struct FileId **result);
+    int (*get_node_by_id)(struct Fs *fs, struct Node **result, struct FileId *id);
+};
 
-int vfs_walk(struct vnode* vnode, const char* path, struct vnode** result);
+struct Node {
+    enum NodeType type;
+    struct NodeOps *ops;
 
+    struct Fs *filesystem;        
+    struct Fs *mounted_fs;        
+
+    size_t flags;
+    size_t ref_count;
+    void *data;
+};
+
+struct NodeOps {
+    int (*open)(struct Node *node, uint64_t flags);
+    int (*close)(struct Node *node, uint64_t flags);
+    int (*read_write)(struct Node *node, struct IoOp *io, size_t flags);
+    int (*get_attr)(struct Node *node, struct NodeAttr *attr);
+    int (*set_attr)(struct Node *node, const struct NodeAttr *attr);
+    int (*lookup)(struct Node *dir, const char *name, struct Node **result); // Modified to take three arguments
+    int (*create)(struct Node *dir, const char *name, struct NodeAttr *attr, struct Node **result);
+    int (*remove)(struct Node *dir, const char *name);
+    int (*read_dir)(struct Node *dir, struct IoOp *io);
+    int (*sync)(struct Node *node);
+    int (*deactivate)(struct Node *node);
+};
+
+struct PathEntry {
+    struct Node *node;           
+    struct PathEntry *parent;   
+    struct PathEntry *next, *prev;
+    char *name;                  
+    size_t name_length;
+};
+
+extern struct Fs *root_fs;
+extern const FileHandle null_handle;
+#define NULL_HANDLE (null_handle)
+
+static inline uint64_t hash_path(const char *str, uint64_t len) {
+    uint64_t hash = 0xcbf29ce484222325; // FNV-1a 64-bit offset basis
+    const uint64_t fnv_prime = 0x100000001b3;
+
+    for (uint64_t i = 0; i < len; i++) {
+        hash ^= (unsigned char)str[i];
+        hash *= fnv_prime;
+    }
+
+    return hash;
+}
+
+struct PathEntry *create_path_entry(struct Node *node, struct PathEntry *parent, const char *name, size_t len);
+struct PathEntry *add_path_section(struct Node *node, struct PathEntry *dir, const char *section, size_t len);
+void remove_path_section(struct PathEntry *entry);
+struct PathEntry *find_path_section(struct PathEntry *dir, const char *section, size_t len);
+
+// Helper functions to manage path caching
+struct Node *lookup_path_entry(struct Node *start_node, const char *section, size_t len);
+struct Node *add_path_entry(struct Node *new_node, struct Node *parent_node, const char *section, size_t len);
+
+struct Node *allocate_node(struct Fs *fs, size_t flags, struct NodeOps *ops, enum NodeType type, void *data);
+void initialize_vfs();
+
+const char *split_path(const char *path, size_t *length);

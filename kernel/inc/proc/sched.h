@@ -54,10 +54,10 @@ struct JCB {
     // void* shared_memory_ptr;            // Pointer to shared memory segment
 
     // TODO: once VFS
-    struct vnode** file_descriptors;        // Array of nodes
-    size_t num_file_descriptors;            // Number of file descriptors allocated
-    size_t max_file_descriptors;            // Maximum number of file descriptors
-
+    struct vnode* *file_descriptors;
+    int num_file_descriptors;
+    int max_file_descriptors;
+    
     struct JCB* first_child;
     struct JCB* next_sibling;
     struct JCB* parent;

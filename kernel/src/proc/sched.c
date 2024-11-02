@@ -101,8 +101,11 @@ struct JCB* sched_create_job(uintptr_t callback, uint8_t* code_base, size_t code
 
     new_job->user_time = 0;
     new_job->system_time = 0;
-
     new_job->first_child = nullptr;
+
+    new_job->file_descriptors = (struct vnode**)kmalloc(sizeof(struct vnode*) * INITIAL_FD_COUNT);
+    new_job->num_file_descriptors = 0;
+    new_job->max_file_descriptors = INITIAL_FD_COUNT;
 
     spinlock_lock(&sched_lock);
     if (!job_list) {
@@ -152,6 +155,7 @@ void sched_terminate_job(struct JCB* job) {
     spinlock_unlock(&sched_lock);
 
     kfree((void*)job->kernel_stack_base);
+    kfree(job->file_descriptors);
     kfree(job);
 }
 

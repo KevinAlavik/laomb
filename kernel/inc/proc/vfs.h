@@ -13,6 +13,8 @@ enum vnode_type {
     VNODE_BAD
 };
 
+#define INITIAL_FD_COUNT 0x10
+
 struct vfs_operations {
     int (*mount)(struct vfs* vfs, const char* path, struct vnode* mountat);
     int (*unmount)(struct vfs* vfs);

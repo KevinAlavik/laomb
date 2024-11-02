@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <kheap.h>
 #include <string.h>
+#include <proc/sched.h>
 
 int rootfs_mount(struct vfs* vfs, const char* path, struct vnode* mountat)
 {
@@ -25,14 +26,50 @@ int rootfs_sync(struct vfs* vfs)
 }
 
 int rootfs_get_vnode_fd(struct vfs* vfs, uint64_t fd, struct vnode** vnode) {
+    struct JCB* job = sched_get_current_job();
+    if (job->file_descriptors[fd] == nullptr) {
+        return -1;
+    }
+    *vnode = job->file_descriptors[fd];
     return 0;
 }
 
 int rootfs_allocate_fd(struct vfs* vfs, struct vnode* vnode, uint32_t flags, uint64_t* fd) {
+    struct JCB* job = sched_get_current_job();
+
+    for (size_t i = 0; i < job->max_file_descriptors; ++i) {
+        if (job->file_descriptors[i] == nullptr) {
+            job->file_descriptors[i] = vnode;
+            *fd = i;
+            job->num_file_descriptors++;
+            return 0;
+        }
+    }
+
+    size_t new_max = job->max_file_descriptors * 2;
+    struct vnode** new_fds = (struct vnode**)krealloc(job->file_descriptors, new_max * sizeof(struct vnode*));
+    if (!new_fds) return -1;
+
+    memset(&new_fds[job->max_file_descriptors], 0, (new_max - job->max_file_descriptors) * sizeof(struct vnode*));
+    job->file_descriptors = new_fds;
+    job->max_file_descriptors = new_max;
+
+    job->file_descriptors[job->num_file_descriptors] = vnode;
+    *fd = job->num_file_descriptors;
+    job->num_file_descriptors++;
     return 0;
 }
 
 int rootfs_close_fd(struct vfs* vfs, uint64_t fd) {
+    struct JCB* job = sched_get_current_job();
+
+    if (fd >= job->max_file_descriptors || job->file_descriptors[fd] == nullptr) {
+        return -1;
+    }
+
+    job->file_descriptors[fd] = nullptr;
+    job->num_file_descriptors--;
+
     return 0;
 }
 

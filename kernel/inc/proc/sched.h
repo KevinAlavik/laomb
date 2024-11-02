@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include <sys/idt.h>
 #include <sys/mmu.h>
-#include <proc/vfs.h>
 
 #define JOB_KERNEL_STACK_SIZE 4096
 
@@ -54,9 +53,9 @@ struct JCB {
     // void* shared_memory_ptr;            // Pointer to shared memory segment
 
     // TODO: once VFS
-    struct vnode* *file_descriptors;
-    int num_file_descriptors;
-    int max_file_descriptors;
+    // struct vnode* *file_descriptors;
+    // int num_file_descriptors;
+    // int max_file_descriptors;
     
     struct JCB* first_child;
     struct JCB* next_sibling;

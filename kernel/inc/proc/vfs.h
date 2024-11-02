@@ -18,8 +18,8 @@ struct vfs_operations {
     int (*unmount)(struct vfs* vfs);
     int (*groot)(struct vfs* vfs, struct vnode** root); // root will be filled with a pointer to the root node
     int (*sync)(struct vfs* vfs);
-    int (*to_fd)(struct vfs* vfs, struct vnode* vnode, uint32_t flags, uint64_t* fd);
-    int (*from_fd)(struct vfs* vfs, uint64_t fd, uint32_t flags, struct vnode** vnode);
+    int (*allocate_fd)(struct vfs* vfs, struct vnode* vnode, uint32_t flags, uint64_t* fd);
+    int (*close_fd)(struct vfs* vfs, uint64_t fd);
 };
 
 struct vfs {
@@ -69,14 +69,20 @@ extern struct vfs* root_vfs;
 
 bool vfs_initroot();
 
-bool vfs_mount(struct vfs* fs, struct vnode* node);
+bool vfs_mount(struct vfs* fs, const char* path, struct vnode* node);
 bool vfs_unmount(struct vnode* node);
 
 int vfs_resolve_path(const char* path, struct vnode** out_vnode);
-int vfs_dup_fd(struct vfs* vfs, uint64_t fd, uint64_t* new_fd);
 int vfs_close_fd(struct vfs* vfs, uint64_t fd);
 
-int vfs_flock(struct vnode* vnode, uint16_t lock_type);
+enum flock_type { // advisory locks :)
+    FLOCK_SHARED,
+    FLOCK_EXCLUSIVE,
+    FLOCK_ULOCK_EXCLUSIVE,
+    FLOCK_ULOCK_SHARED
+};
+
+int vfs_flock(struct vnode* vnode, enum flock_type lock_type);
 int vfs_sync_all();
 
 int vfs_walk(struct vnode* vnode, const char* path, struct vnode** result);

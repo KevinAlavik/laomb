@@ -20,6 +20,7 @@ struct vfs_operations {
     int (*sync)(struct vfs* vfs);
     int (*allocate_fd)(struct vfs* vfs, struct vnode* vnode, uint32_t flags, uint64_t* fd);
     int (*close_fd)(struct vfs* vfs, uint64_t fd);
+    int (*get_vnode_fd)(struct vfs* vfs, uint64_t fd, struct vnode** vnode);
 };
 
 struct vfs {

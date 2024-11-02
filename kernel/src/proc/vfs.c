@@ -6,29 +6,58 @@
 
 int rootfs_mount(struct vfs* vfs, const char* path, struct vnode* mountat)
 {
-
+    return -1;
 }
 
 int rootfs_unmount(struct vfs* vfs)
 {
-    
+    return -1;
 }
 
 int rootfs_groot(struct vfs* vfs, struct vnode** root)
 {
-    
+    *root = (struct vnode*)vfs->vfs_data;    
 }
+
 int rootfs_sync(struct vfs* vfs)
-{
-    
+{ // wtf we syncing? the ram?
+    return 0;
+}
+
+#define MAX_FD 65536
+struct vnode* fd_table[MAX_FD] = {0};
+
+static uint64_t hash_vnode(const struct vnode* vnode) {
+    uintptr_t address = (uintptr_t)vnode;
+    return address ^ (address >> 12) ^ (address >> 24);
+}
+
+int rootfs_get_vnode_fd(struct vfs* vfs, uint64_t fd, struct vnode** vnode) {
+    uint64_t fd_index = fd % MAX_FD;
+    *vnode = fd_table[fd_index];
+    if (*vnode == nullptr) return -1;   
+    return 0;
 }
 
 int rootfs_allocate_fd(struct vfs* vfs, struct vnode* vnode, uint32_t flags, uint64_t* fd) {
+    static uint64_t fd_counter = 1;
+    
+    uint64_t vnode_hash = hash_vnode(vnode);
+    uint64_t combined_fd = (fd_counter++ << 32) | (vnode_hash & 0xFFFFFFFF);
 
+    *fd = (combined_fd ^ (combined_fd >> 16)) * 0x85EBCA6B + 0xC2B2AE35;
+    uint64_t fd_index = *fd % MAX_FD;
+
+    fd_table[fd_index] = vnode;
+
+    return 0;
 }
 
 int rootfs_close_fd(struct vfs* vfs, uint64_t fd) {
-
+    uint64_t fd_index = fd % MAX_FD;
+    fd_table[fd_index]->refcount--;
+    fd_table[fd_index] = nullptr;
+    return 0;
 }
 
 int rootfsv_open(struct vnode* vnode, const char* name, uint32_t flags, struct vnode** out)
@@ -116,6 +145,7 @@ bool vfs_initroot()
     op->sync = rootfs_sync;
     op->allocate_fd = rootfs_allocate_fd;
     op->close_fd = rootfs_close_fd;
+    op->get_vnode_fd = rootfs_get_vnode_fd;
     root_vfs->vfs_op = op;
     root_vfs->mount = nullptr;
     root_vfs->next = nullptr;

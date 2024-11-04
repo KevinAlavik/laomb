@@ -109,6 +109,7 @@
         "errno.h": "c",
         "features.h": "c",
         "error_t.h": "c",
-        "stat.h": "c"
+        "stat.h": "c",
+        "vfs,h": "c"
     }
 }

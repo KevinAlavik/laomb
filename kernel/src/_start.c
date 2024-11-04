@@ -5,6 +5,7 @@
 #include <string.h>
 #include <ultra_protocol.h>
 #include <kheap.h>
+#include <string.h>
 
 uintptr_t higher_half_base;
 
@@ -23,8 +24,9 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
 [[noreturn]] void main() {
 
-    for(;;) ;
+    for (;;) ;
 }
+
 
 [[noreturn]] void _start(struct ultra_boot_context* ctx, uint32_t)
 {

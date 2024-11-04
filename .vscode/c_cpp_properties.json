@@ -9,7 +9,8 @@
             "defines": [
                 "__STDC_VERSION__=200710L",
                 "nullptr=(void*)0",
-                "constexpr=const"
+                "constexpr=const",
+                "consteval="
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c23",

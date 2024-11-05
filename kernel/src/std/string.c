@@ -552,6 +552,9 @@ long long strtoll( const char* str, char** endptr, int base ) {
 char* strdup( const char* s ) {
     size_t len = strlen( s );
     char* copy = kmalloc( len + 1 );
+    if ( !copy ) {
+        return nullptr;
+    }
     memcpy( copy, s, len + 1 );
     return copy;
 }

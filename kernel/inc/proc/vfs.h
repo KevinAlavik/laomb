@@ -5,108 +5,99 @@
 #include <spinlock.h>
 #include <proc/sched.h>
 
-struct timespec
-{
-    int32_t tv_sec;
-    int32_t tv_nsec;
-};
-struct stat
-{
-    uint32_t st_dev;
-    uint32_t st_ino;
-    uint32_t st_nlink;
-    uint32_t st_mode;
-    uint32_t st_uid;
-    uint32_t st_gid;
-    uint32_t __pad0;
-    uint32_t st_rdev;
-    int64_t st_size;
-    int32_t st_blksize;
-    int64_t st_blocks;
-    struct timespec st_atim;
-    struct timespec st_mtim;
-    struct timespec st_ctim;
-    uint32_t __unused[6];
-};
+typedef enum {
+    VFS_SUCCESS = 0,
+    VFS_NOT_FOUND,
+    VFS_NOT_PERMITTED,
+    VFS_OVERFLOW,
+    VFS_MEMORY_ERROR,
+    VFS_IO_ERROR,
+} vfs_err_t;
 
-struct vnode
-{
-	struct handle* handle;
-	struct filesystem* fs;
-	struct vnode* parent;
-	struct vnode* mount;
-	struct vnode* hard_link;
-	char* sym_link;
-	char* name;
-	bool initialised;
+struct vnode {
+    struct vnode* parent;
+    struct vnode* next;
+    struct vnode* child;
 
-    struct vnode* first_child;
-    struct vnode* next_sibling;
-    // more?
-};
+    uint16_t flags;
+    char* name;
+    uint64_t size;
 
-struct filesystem
-{
-	char name[64];
+    uint64_t creation_time;
+    uint64_t modification_time;
 
-	struct vnode* (*mount)(struct vnode* mount_point, const char* name, struct vnode* source);
-	void (*init)(struct filesystem* self, struct vnode* parent);
-	struct vnode* (*create)(struct filesystem* self, struct vnode* parent, const char* name, uint32_t mode);
-	struct vnode* (*hard_link)(struct filesystem* self, struct vnode* parent, const char* name, struct vnode* target);
-	struct vnode* (*sym_link)(struct filesystem* self, struct vnode* parent, const char* name, const char* target);
+    char owner_name[70];
+    
+	uint32_t reference_count;
+	// todo flock() stuff
 
-	bool initialised;
-	struct filesystem* next;
+	struct vnode* hard_link; 		// nullptr if node is not a hard link
+	char* soft_link; 				// nullptr if node is not a soft link
+	struct vfs_tree* tree;			// If not nullptr, what filesystem is mounted over me?
+
+	vfs_err_t (*open)(struct vnode* this, const char* name, uint16_t flags, struct vnode** out);
+	vfs_err_t (*close)(struct vnode* this);
+	vfs_err_t (*read)(struct vnode* this, uint32_t offset, uint32_t size, uint8_t* buffer);
+	vfs_err_t (*write)(struct vnode* this, uint32_t offset, uint32_t size, const uint8_t* buffer);
+	vfs_err_t (*remove)(struct vnode* this, const char* name);
+	vfs_err_t (*ioctl)(struct vnode* this, uint32_t request, void* arg);
+	vfs_err_t (*symlink)(struct vnode* this, struct vnode** out);
 };
 
-struct fd
-{
-	struct handle* handle;
-	size_t num_refs;
-	size_t offset;
-	struct vnode* node;
-	struct spinlock lock;
+struct vfs_tree {
+    struct vnode *root;
+	struct vnode *mount_point; 		// nullptr for rootfs and unmounted systems.
+	
+	struct vfs_tree *next;				// next entry in the filesystems linked list
 };
-struct fd* fd_from_num(struct JCB* proc, int fd);
 
-struct handle
-{
-	struct spinlock lock;
-	struct stat stat;
+extern struct vfs_tree* rootfs;
 
-	int32_t (*read)(struct handle* self, struct fd* fd, void* output_buffer, size_t amount, int32_t offset);
-	int32_t (*write)(struct handle* self, struct fd* fd, const void* input_buffer, size_t amount, int32_t offset);
-	int32_t (*ioctl)(struct handle* self, struct fd* fd, uint32_t request, void* argument);
-};
-void* handle_new(size_t size);
-size_t handle_new_device();
+bool vfs_initialize();
+struct vnode *vfs_create_node(const char *name, uint32_t flags, struct vnode *parent);
+void vfs_remove_node(struct vnode *parent, struct vnode *node);
 
-extern struct spinlock vfs_lock;
+struct vnode *vfs_search_node(struct vnode *parent, const char *name);
+struct vnode *vfs_traverse_path(struct vfs_tree *vfs, const char *path);
+struct vnode *vfs_find_node(const char* path);
 
-void vfs_init();
-bool vfs_fs_register(struct filesystem* fs);
-struct vnode* vfs_get_root();
+int vfs_read(struct vnode *file, uint32_t offset, uint32_t size, uint8_t *buffer);
+int vfs_write(struct vnode *file, uint32_t offset, uint32_t size, const uint8_t *buffer);
 
-struct vnode* vfs_node_new(struct filesystem* fs, struct vnode* parent, const char* name, bool is_dir);
-struct vnode* vfs_node_add(struct vnode* parent, const char* name, uint32_t mode);
-bool vfs_node_delete(struct vnode* node);
-bool vfs_mount(struct vnode* parent, const char* src_path, const char* dest_path, const char* fs_name);
-size_t vfs_get_path(struct vnode* target, char* buffer, size_t length);
-bool vfs_create_dots(struct vnode* current, struct vnode* parent);
-struct vnode* vfs_sym_link(struct vnode* parent, const char* path, const char* target);
-struct vnode* vfs_resolve_node(struct vnode* node, bool follow_links);
-struct vnode* vfs_get_node(struct vnode* parent, const char* path, bool follow_links);
+vfs_err_t vfs_mount(const char *target_path, struct vfs_tree *filesystem);
+vfs_err_t vfs_unmount(const char *target_path);
 
-#define S_IFMT  00170000
-#define S_IFSOCK 0140000
-#define S_IFLNK	 0120000
-#define S_IFREG  0100000
-#define S_IFBLK  0060000
-#define S_IFDIR  0040000
-#define S_IFCHR  0020000
-#define S_IFIFO  0010000
-#define S_ISUID  0004000
-#define S_ISGID  0002000
-#define S_ISVTX  0001000
-#define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
-#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+#define PERM_OTHER(x)    ((x) & 0x7)         // "Others" permission bits (rwx)
+#define PERM_GROUP(x)    (((x) & 0x7) << 3)  // "Group" permission bits (rwx)
+#define PERM_OWNER(x)    (((x) & 0x7) << 6)  // "Owner" permission bits (rwx)
+
+#define PERM_OTHER_READ    (0x1 << 0)
+#define PERM_OTHER_WRITE   (0x2 << 0)
+#define PERM_OTHER_EXEC    (0x4 << 0)
+
+#define PERM_GROUP_READ    (0x1 << 3)
+#define PERM_GROUP_WRITE   (0x2 << 3)
+#define PERM_GROUP_EXEC    (0x4 << 3)
+
+#define PERM_OWNER_READ    (0x1 << 6)
+#define PERM_OWNER_WRITE   (0x2 << 6)
+#define PERM_OWNER_EXEC    (0x4 << 6)
+
+#define FILE_TYPE_REG    (0x1 << 9)   // Regular file
+#define FILE_TYPE_DIR    (0x2 << 9)   // Directory
+#define FILE_TYPE_LNK    (0x3 << 9)   // Symbolic link
+#define FILE_TYPE_BLK    (0x4 << 9)   // Block device
+#define FILE_TYPE_CHR    (0x5 << 9)   // Character device
+#define FILE_TYPE_FIFO   (0x6 << 9)   // FIFO/pipe
+#define FILE_TYPE_SOCK   (0x7 << 9)   // Socket
+
+#define ACTION_RDONLY    (0x0 << 13)  // Read-only
+#define ACTION_WRONLY    (0x1 << 13)  // Write-only
+#define ACTION_RDWR      (0x2 << 13)  // Read-write
+#define ACTION_CREAT     (0x3 << 13)  // Create
+#define ACTION_APPEND    (0x4 << 13)  // Append
+#define ACTION_TRUNC     (0x5 << 13)  // Truncate
+
+
+#define CREATE_FLAGS(perm, type, action) \
+    (PERM_OWNER(((perm) >> 6) & 0x7) | PERM_GROUP(((perm) >> 3) & 0x7) | PERM_OTHER((perm) & 0x7) | (type) | (action))

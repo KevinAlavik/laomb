@@ -22,3 +22,4 @@ struct fshell_ctx {
 extern struct fshell_ctx fshell_ctx;
 
 void fshell_interrupt_handler(registers_t*);
+char getchar_locking();

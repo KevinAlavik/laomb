@@ -17,3 +17,4 @@ void set_background_color(uint32_t color);
 void set_colors(uint32_t fg_color, uint32_t bg_color);
 
 void set_pixel(uint32_t x, uint32_t y, uint32_t color);  
+void set_cursor(uint32_t x, uint32_t y);

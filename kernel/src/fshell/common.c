@@ -25,7 +25,7 @@ const char* scancodeToASCII_shift[256] = {
     "", " ", "", "", "", "", "", "", "", "", "", "", "", "", ""
 };
 
-static char getchar_locking() {
+char getchar_locking() {
     while (fshell_ctx.count == 0)
         yield();
     char c = fshell_ctx.buffer[(fshell_ctx.buffer_index - fshell_ctx.count + FSHELL_BUFFER_SIZE) % FSHELL_BUFFER_SIZE];
@@ -452,6 +452,8 @@ static void command_cd(char *args) {
     close(handle);
 }
 
+extern void text_editor(const char* path);
+
 void execute_command(const char *command, char *args) {
     if (command == NULL || strlen(command) == 0)
         return;
@@ -461,12 +463,19 @@ void execute_command(const char *command, char *args) {
             commands[i].function(args);
             return;
         }
+        if (strcmp(command, "edit") == 0) {
+            char full_path[FSHELL_BUFFER_SIZE];
+            resolve_path(full_path, args);
+            text_editor(full_path);
+            return;
+        }
     }
 
     puts("Unknown command: ");
     puts(command);
     puts("\n");
 }
+
 
 void fshell_callback() {
     char buffer[FSHELL_BUFFER_SIZE];

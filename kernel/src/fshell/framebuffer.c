@@ -350,3 +350,9 @@ void cls() {
     (void)fb;
     // somehow, this prevents UB
 }
+
+void set_cursor(uint32_t x, uint32_t y)
+{
+    cursor_x = x;
+    cursor_y = y;
+}

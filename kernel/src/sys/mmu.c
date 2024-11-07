@@ -7,6 +7,8 @@
 
 mmu_context_t kernel_page_directory;
 extern uintptr_t higher_half_base;
+extern struct ultra_framebuffer_attribute* framebuffer;
+uintptr_t framebuffer_vaddr = 0;
 
 static inline uint32_t get_page_index(uint32_t addr) {
     return addr / PAGE_SIZE;
@@ -32,6 +34,67 @@ void mmu_switch_pd(mmu_context_t* pageDirectory) {
         : "memory"
     );
     kprintf("Switched to PD at paddr: 0x%p, vaddr: 0x%lx\n", pageDirectory->pd, ((uintptr_t)pageDirectory->pd + higher_half_base));
+}
+
+#define FRAMEBUFFER_VADDR_START 0xF0000000
+#define FRAMEBUFFER_VADDR_END   0xFFFFFFFF
+
+static void map_framebuffer(mmu_context_t* page_directory) {
+    uint32_t vaddr = FRAMEBUFFER_VADDR_START;
+    uint32_t paddr = (uintptr_t)framebuffer->fb.physical_address;
+    size_t size = framebuffer->fb.width * framebuffer->fb.height * (framebuffer->fb.bpp / 8);
+
+    size = ROUND_UP_TO_PAGE(size);
+
+    while (vaddr + size <= FRAMEBUFFER_VADDR_END) {
+        bool conflict_found = false;
+
+        for (size_t i = 0; i < ULTRA_MEMORY_MAP_ENTRY_COUNT(pmm_memory_map->header); i++) {
+            struct ultra_memory_map_entry* entry = &pmm_memory_map->entries[i];
+
+            if (entry->type == ULTRA_MEMORY_TYPE_FREE ||
+                entry->type == ULTRA_MEMORY_TYPE_RECLAIMABLE ||
+                entry->type == ULTRA_MEMORY_TYPE_KERNEL_STACK ||
+                entry->type == ULTRA_MEMORY_TYPE_KERNEL_BINARY) {
+
+                uintptr_t ram_start = entry->physical_address;
+                uintptr_t ram_end = ram_start + entry->size;
+
+                if ((paddr >= ram_start && paddr < ram_end) ||
+                    (paddr + size > ram_start && paddr + size <= ram_end)) {
+                    kprintf("Framebuffer address overlaps with RAM: 0x%p - 0x%p at VA 0x%p\n", 
+                            ram_start, ram_end, vaddr);
+                    conflict_found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!conflict_found) {
+            uint32_t current_vaddr = vaddr;
+            uint32_t current_paddr = paddr;
+            size_t remaining_size = size;
+
+            while (remaining_size > 0) {
+                if (!mmu_map_page(page_directory, current_vaddr, PAGE_SIZE, current_paddr, PAGE_PRESENT | PAGE_RW)) {
+                    kprintf("Failed to map framebuffer at vaddr: 0x%p\n", current_vaddr);
+                    cli(); for(;;) hlt();
+                }
+                current_vaddr += PAGE_SIZE;
+                current_paddr += PAGE_SIZE;
+                remaining_size -= PAGE_SIZE;
+            }
+
+            kprintf("Framebuffer successfully mapped at vaddr: 0x%p\n", vaddr);
+            framebuffer_vaddr = vaddr;
+            return;
+        }
+
+        vaddr += 0x100000;
+    }
+
+    kprintf("Failed to map framebuffer: no available virtual address space.\n");
+    cli(); for(;;) hlt(); 
 }
 
 void mmu_init_pd(mmu_context_t* page_directory) {
@@ -82,6 +145,8 @@ void mmu_init_pd(mmu_context_t* page_directory) {
     mmu_map_page(page_directory, (uintptr_t)__rodata_start, __rodata_end - __rodata_start, (uintptr_t)__rodata_start - higher_half_base, PAGE_PRESENT);
     mmu_map_page(page_directory, (uintptr_t)__data_start, __data_end - __data_start, (uintptr_t)__data_start - higher_half_base, PAGE_PRESENT | PAGE_RW);
     mmu_map_page(page_directory, (uintptr_t)__bss_start, __bss_end - __bss_start, (uintptr_t)__bss_start - higher_half_base, PAGE_PRESENT | PAGE_RW);
+
+    map_framebuffer(page_directory);
 }
 
 bool mmu_map_page(mmu_context_t* pageDirectory, uint32_t vaddr, size_t size, uint32_t paddr, uint32_t flags) {

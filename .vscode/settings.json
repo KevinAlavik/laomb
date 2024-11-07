@@ -110,6 +110,7 @@
         "features.h": "c",
         "error_t.h": "c",
         "stat.h": "c",
-        "vfs,h": "c"
+        "vfs,h": "c",
+        "font.h": "c"
     }
 }

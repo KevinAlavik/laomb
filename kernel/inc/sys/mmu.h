@@ -57,6 +57,7 @@ typedef struct {
 
 extern mmu_context_t kernel_page_directory;
 extern uintptr_t higher_half_base;
+extern uintptr_t framebuffer_vaddr;
 
 bool mmu_map_page(mmu_context_t* pageDirectory, uint32_t virtualAddress, size_t size, uint32_t physicalAddress, uint32_t flags);
 bool mmu_unmap_page(mmu_context_t* pageDirectory, uint32_t virtualAddress);

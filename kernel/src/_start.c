@@ -21,8 +21,10 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 #include <sys/mmu.h>
 
 #include <proc/sched.h>
+#include <video/print.h>
 
-[[noreturn]] void main() {
+[[noreturn]] void job0() {
+    DEBUG("Scheduler initialised");
 
     for (;;) ;
 }
@@ -64,9 +66,11 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
     mmu_init_pd(&kernel_page_directory);
 
     mmu_switch_pd(&kernel_page_directory);
+    DEBUG("Switched to new kernel page directory");
     pmm_reclaim_bootloader_memory();
+    DEBUG("Reclaimed bootloader memory");
 
-    sched_create_job((uintptr_t)main, (uint8_t*)__text_start, (uintptr_t)(__text_start - __text_end), (uint8_t*)__data_start, (uintptr_t)(__data_end - __data_start)
+    sched_create_job((uintptr_t)job0, (uint8_t*)__text_start, (uintptr_t)(__text_start - __text_end), (uint8_t*)__data_start, (uintptr_t)(__data_end - __data_start)
                     , 0, 0, 0, nullptr);
 
     sched_init();

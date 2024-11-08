@@ -22,9 +22,21 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
 
 #include <proc/sched.h>
 #include <video/print.h>
+#include <driver/keyboard.h>
 
 [[noreturn]] void job0() {
     DEBUG("Scheduler initialised");
+
+    keyboard_init();
+    DEBUG("Keyboard initialised");
+
+    while (1) {
+        char c = keyboard_getchar();
+        if (c == -1) {
+            continue;
+        }
+        print("%c", c);
+    }
 
     for (;;) ;
 }

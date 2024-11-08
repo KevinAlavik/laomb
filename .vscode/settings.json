@@ -111,6 +111,8 @@
         "error_t.h": "c",
         "stat.h": "c",
         "vfs,h": "c",
-        "font.h": "c"
+        "font.h": "c",
+        "print.h": "c",
+        "keyboard.h": "c"
     }
 }

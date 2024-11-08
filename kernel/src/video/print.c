@@ -40,10 +40,11 @@ static void output_func(const char* buffer) {
                 cursor_y -= 1;
                 cursor_x = SCREEN_WIDTH - 1;
             }
+            font_draw_char(cursor_x, cursor_y, '~'+1, 0x000000);
         } else {
             font_draw_char(cursor_x, cursor_y, character, 0xFFFFFF);
             cursor_x += 1;
-            if (cursor_x >= SCREEN_WIDTH) {
+            if (cursor_x >= (SCREEN_WIDTH / 8)) {
                 cursor_x = 0;
                 cursor_y += 1;
             }

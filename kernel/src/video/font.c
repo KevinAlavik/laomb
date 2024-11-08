@@ -1,6 +1,7 @@
 #include <video/font.h>
 #include <sys/mmu.h>
 #include <string.h>
+#include <kprintf>
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
@@ -102,11 +103,12 @@ static const uint8_t kernel_font_data[] = {
     0x0E, 0x18, 0x18, 0x70, 0x18, 0x18, 0x0E, 0x00, // '{'
     0x18, 0x18, 0x18, 0x00, 0x18, 0x18, 0x18, 0x00, // '|'
     0x70, 0x18, 0x18, 0x0E, 0x18, 0x18, 0x70, 0x00, // '}'
-    0x76, 0xDC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // '~'
+    0x76, 0xDC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // '~'
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF // clear character
 };
 
 void font_draw_char(uint16_t x, uint16_t y, char c, uint32_t color) {
-    if (c < ' ' || c > '~') return;
+    if (c < ' ') return;
     if (c - ' ' < 0) { return; }
     const uint8_t *glyph = &kernel_font_data[(c - ' ') * 8];
     for (int row = 0; row < 8; ++row) {
@@ -127,10 +129,10 @@ void font_draw_string(uint16_t x, uint16_t y, const char *str, uint32_t color) {
     while (*str) {
         if (*str == '\n') {
             x = start_x;
-            y += 8;
+            y++;
         } else {
             font_draw_char(x, y, *str, color);
-            x += 8;
+            x++;
         }
         str++;
     }

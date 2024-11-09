@@ -73,21 +73,23 @@ void idt_default_handler(registers_t* regs)
         return;
     }
 
-    kprintf("Unhandled interrupt: %d\n", regs->interrupt);
-    kprintf("EAX=%08x EBX=%08x ECX=%08x EDX=%08x\n", regs->eax, regs->ebx, regs->ecx, regs->edx);
-    kprintf("ESI=%08x EDI=%08x EBP=%08x ESP=%08x\n", regs->esi, regs->edi, regs->ebp, regs->esp);
-    kprintf("EIP=%08x EFL=%08x\n", regs->eip, regs->eflags);
-    kprintf("CS=%04x DS=%04x ES=%04x FS=%04x GS=%04x\n", regs->cs, regs->ds, regs->es, regs->fs, regs->gs);
-    
-    if (regs->cs == 0x20)
-        kprintf("SS =%04x ESP_USER=%08x\n", regs->ss, regs->user_esp);
-
-    kprintf("CR2=%08x CR3=%08x\n", regs->cr2, regs->cr3);
     if (regs->interrupt < 32) {
-        kprintf("Unhandled exception: %s\n", g_Exceptions[regs->interrupt]);
+        kprintf("Unhandled exception %d: %s\n", regs->interrupt, g_Exceptions[regs->interrupt]);
+        kprintf("EAX=%08x EBX=%08x ECX=%08x EDX=%08x\n", regs->eax, regs->ebx, regs->ecx, regs->edx);
+        kprintf("ESI=%08x EDI=%08x EBP=%08x ESP=%08x\n", regs->esi, regs->edi, regs->ebp, regs->esp);
+        kprintf("EIP=%08x EFL=%08x\n", regs->eip, regs->eflags);
+        kprintf("CS=%04x DS=%04x ES=%04x FS=%04x GS=%04x\n", regs->cs, regs->ds, regs->es, regs->fs, regs->gs);
+        
+        if (regs->cs == 0x20)
+            kprintf("SS =%04x ESP_USER=%08x\n", regs->ss, regs->user_esp);
+
+        kprintf("CR2=%08x CR3=%08x\n", regs->cr2, regs->cr3);
+        cli();
+        for (;;) hlt();
+    } else if (regs->interrupt >= PIC_REMAP_OFFSET && regs->interrupt < PIC_REMAP_OFFSET + 0x20) {
+        // ..? It doesnt work
+        pic_sendeoi(regs->interrupt - PIC_REMAP_OFFSET);
     }
-    cli();
-    for (;;) hlt();
 }
 
 void idt_register_handler(int interrupt, handler handler)

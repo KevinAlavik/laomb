@@ -69,7 +69,7 @@ void pic_disable()
 
 void pic_mask(int irq)
 {
-    if (irq > 8) 
+    if (irq > 8)
         irq -= 8;
 
     uint8_t mask = inb(PIC1_DATA_PORT);

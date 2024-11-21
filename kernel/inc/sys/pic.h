@@ -10,6 +10,7 @@
 void pic_init(uint8_t offsetPic1, uint8_t offsetPic2);
 void pic_sendeoi(int irq);
 void pic_disable();
+void pic_enable();
 void pic_mask(int irq);
 void pic_unmask(int irq);
 uint16_t pic_read_irqrr();

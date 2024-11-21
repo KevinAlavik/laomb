@@ -30,6 +30,8 @@ struct ultra_framebuffer_attribute* framebuffer = NULL;
     keyboard_init();
     DEBUG("Keyboard initialised");
 
+    DEBUG("Enabling the Programable Interrupt Controller");
+    pic_enable();
     while (1) {
         char c = keyboard_getchar();
         if (c == -1) {

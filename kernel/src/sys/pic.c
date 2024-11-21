@@ -50,6 +50,8 @@ void pic_init(uint8_t offsetPic1, uint8_t offsetPic2)
     io_wait();
     outb(PIC2_DATA_PORT, 0);
     io_wait();
+
+    pic_disable();
 }
 
 void pic_sendeoi(int irq)
@@ -64,6 +66,15 @@ void pic_disable()
     outb(PIC1_DATA_PORT, 0xFF);
     io_wait();
     outb(PIC2_DATA_PORT, 0xFF);
+    io_wait();
+}
+
+
+void pic_enable()
+{
+    outb(PIC1_DATA_PORT, 0x00);
+    io_wait();
+    outb(PIC2_DATA_PORT, 0x00);
     io_wait();
 }
 
